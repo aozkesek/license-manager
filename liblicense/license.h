@@ -1,6 +1,14 @@
 #ifndef _LICENSE_H
 #define _LICENSE_H
 
+#ifndef _WIN32 
+	#define __stdcall
+	#define __declspec(dllexport)
+	#define _MAX_PATH PATH_MAX
+	
+	#include <limits.h>
+#endif
+
 #include <openssl/rsa.h>
 #include <openssl/bn.h>
 #include <openssl/pem.h>

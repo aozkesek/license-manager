@@ -3,7 +3,6 @@
 #include <sys/stat.h>
 #include <memory.h>
 #include <string.h>
-#include <Windows.h>
 
 #include "license.h"
 
@@ -13,7 +12,7 @@ PLICENSE_STRUCT __stdcall init_license(int argc, byte **argv) {
 
 	if (!argc || !argv)
 		return NULL;
-		
+
     nipps = malloc(sizeof(NIPPS_STRUCT) * argc - 3);
 
 	int i = 3, k = 0;
@@ -22,15 +21,15 @@ PLICENSE_STRUCT __stdcall init_license(int argc, byte **argv) {
 		p = strstr(argv[i], ":");
 		if (!p)
 			continue;
-			
+
 		nipps[i - 3].Name = malloc(p - argv[i] + 1);
 		memset(nipps[i - 3].Name, 0, p - argv[i] + 1);
 		strncpy(nipps[i - 3].Name, argv[i], p - argv[i]);
-		
+
 		nipps[i - 3].Version = malloc(strlen(p));
 		memset(nipps[i - 3].Version, 0, strlen(p));
 		strcpy(nipps[i - 3].Version, p + 1);
-		
+
 		k++;
 	}
 
@@ -50,52 +49,52 @@ void __stdcall free_license(PLICENSE_STRUCT plicense) {
 	if (!plicense)
 		return;
 	free(plicense->Services);
-	free(plicense);	
+	free(plicense);
 }
-	
+
 int __stdcall license_size(PLICENSE_STRUCT plicense) {
 	int len = 0;
 	if (!plicense)
 		return 0;
-	
+
 	byte *license_json = "{'Version':'','LicensedTo':'','IssuedBy':'','Services':[]}";
 	byte *license_services_json = "{'Name':'','Version':''},";
-	
+
 	len += strlen(plicense->Issued_By);
 	len += strlen(plicense->Licensed_To);
 	len += strlen(plicense->Version);
-	
+
 	len += 2; //plicense->Service_Count
-	
+
 	int i = 0;
 	for(; i < plicense->Service_Count; i++) {
 		len += strlen(plicense->Services[i].Name);
 		len += strlen(plicense->Services[i].Version);
 	}
-	
+
 	return len + strlen(license_json) + plicense->Service_Count * strlen(license_services_json);
 }
-	
+
 byte *__stdcall license_to_string(PLICENSE_STRUCT plicense, byte **slicense) {
-	
+
 	if (!plicense || !slicense)
 		return NULL;
-	
+
 	int slen = license_size(plicense);
 	if (!(*slicense))
 		*slicense = malloc((slen));
 	memset(*slicense, 0, slen);
-	
-	sprintf(*slicense, 
+
+	sprintf(*slicense,
 		"{\"Version\":\"%s\",\"LicensedTo\":\"%s\",\"IssuedBy\":\"%s\",\"Services\":["
 		, plicense->Version
 		, plicense->Licensed_To
 		, plicense->Issued_By
 		);
-	
+
 	int i, pos = strlen(*slicense);
-	
-	for (i = 0; i < plicense->Service_Count; i++) 
+
+	for (i = 0; i < plicense->Service_Count; i++)
 	{
 		sprintf(*slicense + pos
 			, "{\"Name\":\"%s\",\"Version\":\"%s\"}"
@@ -105,7 +104,7 @@ byte *__stdcall license_to_string(PLICENSE_STRUCT plicense, byte **slicense) {
 		if (i < plicense->Service_Count - 1)
 			sprintf(*slicense + pos++, ",");
 	}
-	
+
 	pos = strlen(*slicense);
 	sprintf(*slicense + pos, "]}");
 
@@ -123,7 +122,7 @@ void __stdcall print_license(PLICENSE_STRUCT plicense) {
 byte *__stdcall reallocate(byte **b, int blen) {
 	if (!b)
 		return NULL;
-		
+
 	if(*b)
 		free(*b);
 	*b = malloc(blen);
@@ -132,32 +131,32 @@ byte *__stdcall reallocate(byte **b, int blen) {
 }
 
 byte *__stdcall load_from_file(byte *fname) {
-	
+
 	FILE *file = fopen(fname, "r");
 	if (!file)
 		return NULL;
-	
+
 	if (fseek(file, 0, SEEK_END)) {
 		fclose(file);
 		return NULL;
 	}
-	
+
 	int flen = ftell(file);
 	rewind(file);
-	
+
 	byte *message = malloc(flen + 1);
-	
+
 	fread(message, flen, 1, file);
-	
+
 	fclose(file);
-	
+
 	message[flen] = 0;
-	
+
 	return message;
 }
 
 byte *__stdcall extract_subs(byte *lic_client, byte *begin_title, byte *end_title, bool trim) {
-	
+
 	byte *p_begin_title = strstr(lic_client, begin_title);
 	if (!p_begin_title)
 		return NULL;
@@ -165,7 +164,7 @@ byte *__stdcall extract_subs(byte *lic_client, byte *begin_title, byte *end_titl
 	byte *p_end_title = strstr(lic_client, end_title);
 	if (!p_end_title)
 		return NULL;
-	
+
 
 	int i = 0,
 		j = 0,
@@ -182,14 +181,15 @@ byte *__stdcall extract_subs(byte *lic_client, byte *begin_title, byte *end_titl
 			key[j++] = p_begin_title[pos + i];
 		i++;
 	}
-	
+
 	return key;
-	
+
 }
 
 void initialize();
 void finalize();
 
+#ifdef __WIN32
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
 
 	switch (fdwReason) {
@@ -204,3 +204,4 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
 
 	return TRUE;
 }
+#endif
