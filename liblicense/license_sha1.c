@@ -5,7 +5,7 @@
 #include "license.h"
 
 typedef struct _LICENSESHA1 {
-	RSA *pub_netas;
+	RSA *pub_provider;
 	RSA *pri_client;
 
 	byte *source_sha1;
@@ -21,7 +21,7 @@ byte *__stdcall sha1(byte *source, int slen, byte **target) {
 	if (!SHA1(source, slen, sha1_buffer))
 		return NULL;
 
-	return encode_b64(sha1_buffer, SHA_DIGEST_LENGTH, target);
+	return base64_encode(sha1_buffer, SHA_DIGEST_LENGTH, target);
 }
 
 int license_sha1_initialize(PLICENSESHA1 plsha1, byte *pem_path) {
@@ -33,16 +33,16 @@ int license_sha1_initialize(PLICENSESHA1 plsha1, byte *pem_path) {
 	
 	byte pemName[_MAX_PATH];
 	memset(pemName, 0, _MAX_PATH);
-	sprintf(pemName, "%s\\pub_netas.pem", pem_path);
+	sprintf(pemName, "%s\\pub_provider.pem", pem_path);
 
-	plsha1->pub_netas = load_key(pemName, false, true);
-	if (!plsha1->pub_netas)
+	plsha1->pub_provider = rsa_public_key_read_from_file(pemName);
+	if (!plsha1->pub_provider)
 		return 1;
 	
 	memset(pemName, 0, _MAX_PATH);
 	sprintf(pemName, "%s\\pri_client.pem", pem_path);
 
-	plsha1->pri_client = load_key(pemName, false, false);
+	plsha1->pri_client = rsa_private_key_read_from_file(pemName);
 	if (!plsha1->pri_client)
 		return 1;
 
@@ -56,7 +56,7 @@ void license_sha1_finalize(PLICENSESHA1 plsha1) {
 	if (plsha1->source_sha1) free(plsha1->source_sha1);
 	if (plsha1->sha1) free(plsha1->sha1);
 
-	if (plsha1->pub_netas) RSA_free(plsha1->pub_netas);
+	if (plsha1->pub_provider) RSA_free(plsha1->pub_provider);
 	if (plsha1->pri_client) RSA_free(plsha1->pri_client);
 
 
@@ -90,7 +90,7 @@ int license_sha1_decrypt(PLICENSESHA1 plsha1, byte *sha1a, byte *sha1b) {
 	free(dec_sha1a);
 	free(dec_sha1b);
 
-	alen = public_decrypt_b64(sha1, &plsha1->sha1, plsha1->pub_netas);
+	alen = public_decrypt_b64(sha1, &plsha1->sha1, plsha1->pub_provider);
 	free(sha1);
 
 	if (alen < 0) {

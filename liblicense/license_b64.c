@@ -29,7 +29,7 @@ int b64i(byte c) {
 
 }
 
-int __stdcall decode_b64(byte *source, byte **target) {
+int __stdcall base64_decode(byte *source, byte **target) {
 
 	if (!source || !target)
 		return 0;
@@ -67,7 +67,7 @@ int __stdcall decode_b64(byte *source, byte **target) {
 	return tlen;
 }
 
-byte *__stdcall encode_b64(byte *source, int slen, byte **target) {
+byte *__stdcall base64_encode(byte *source, int slen, byte **target) {
 	if (!source || !target)
 		return NULL;
 		
@@ -100,7 +100,7 @@ byte *__stdcall encode_b64(byte *source, int slen, byte **target) {
 	return *target;
 }
 
-void __stdcall b64_write_to_file(byte *b64, FILE *fd) {
+void __stdcall base64_write_to_file(byte *b64, FILE *fd) {
 	
 	if (!b64 || !fd)
 		return;
@@ -121,7 +121,7 @@ void __stdcall b64_write_to_file(byte *b64, FILE *fd) {
 	
 }
 
-byte *__stdcall encode_hex(byte *source, int slen, byte **target) {
+byte *__stdcall hex_encode(byte *source, int slen, byte **target) {
 	int i = 0, 
 		c,
 		tlen = 1 + slen * 2;

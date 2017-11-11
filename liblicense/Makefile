@@ -1,23 +1,25 @@
-INCDIRS := ../../openssl/include/
-LIBDIRS := ../../openssl/
+CC := clang -c -O2
+AR := ar -ru
+INC_SSL := -I ../../openssl/include/
+LIB_SSL := ../../openssl/
 OBJS := license_sha1.o license_b64.o license_evp.o license_rsa.o
-LIBS := $(LIBDIRS)libcrypto.a
+LIBS := 
 
 liblicense.a : $(OBJS) license.h license.c
-	gcc -c -O2 -I $(INCDIRS) license.c
-	ar rcu liblicense.a license.o $(OBJS) $(LIBS)
+	$(CC) $(INC_SSL) license.c
+	$(AR) liblicense.a license.o $(OBJS) $(LIBS)
 
 license_b64.o : license_b64.c license.h
-	gcc -c -O2 -I $(INCDIRS) license_b64.c
+	$(CC) $(INC_SSL) license_b64.c
 
 license_evp.o : license_evp.c license.h
-	gcc -c -O2 -I $(INCDIRS) license_evp.c
+	$(CC) $(INC_SSL) license_evp.c
 
 license_rsa.o : license_rsa.c license.h
-	gcc -c -O2 -I $(INCDIRS) license_rsa.c
+	$(CC) $(INC_SSL) license_rsa.c
 
 license_sha1.o : license_sha1.c license.h
-	gcc -c -O2 -I $(INCDIRS) license_sha1.c
+	$(CC) $(INC_SSL) license_sha1.c
 
 clean :
-	rm liblicense.a license.o $(OBJS)
+	rm -f liblicense.a license.o $(OBJS)

@@ -6,14 +6,14 @@
 
 #include "license.h"
 
-PLICENSE_STRUCT __stdcall init_license(int argc, byte **argv) {
+PLICENSE_STRUCT __stdcall license_init(int argc, byte **argv) {
     PLICENSE_STRUCT license;
     PNIPPS_STRUCT nipps;
 
 	if (!argc || !argv)
 		return NULL;
 
-    nipps = malloc(sizeof(NIPPS_STRUCT) * argc - 3);
+        nipps = malloc(sizeof(NIPPS_STRUCT) * argc - 3);
 
 	int i = 3, k = 0;
 	byte *p = NULL;
@@ -44,7 +44,7 @@ PLICENSE_STRUCT __stdcall init_license(int argc, byte **argv) {
     return license;
 }
 
-void __stdcall free_license(PLICENSE_STRUCT plicense) {
+void __stdcall license_free(PLICENSE_STRUCT plicense) {
 
 	if (!plicense)
 		return;
@@ -111,11 +111,11 @@ byte *__stdcall license_to_string(PLICENSE_STRUCT plicense, byte **slicense) {
 	return *slicense;
 }
 
-void __stdcall print_license(PLICENSE_STRUCT plicense) {
+void __stdcall license_print(PLICENSE_STRUCT plicense) {
  	if (!plicense)
 		return;
 	byte *buffer = NULL;
-    printf("\n%s\n", license_to_string(plicense, &buffer));
+        printf("\n%s\n", license_to_string(plicense, &buffer));
 	free(buffer);
 }
 
@@ -186,10 +186,11 @@ byte *__stdcall extract_subs(byte *lic_client, byte *begin_title, byte *end_titl
 
 }
 
+#ifdef __WIN32
+
 void initialize();
 void finalize();
 
-#ifdef __WIN32
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
 
 	switch (fdwReason) {

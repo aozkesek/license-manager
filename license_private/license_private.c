@@ -5,8 +5,8 @@
 #include <license.h>
 
 //global variables
-const byte *pem_netas = "pri_netas.pem";
-const byte *pem_public = "pub_netas.pem";
+const byte *pem_provider = "pri_provider.pem";
+const byte *pem_public = "pub_provider.pem";
 const byte *client_lic = "client.lic";
 
 const byte *begin_session = "---BEGIN SESSION KEY---";
@@ -21,7 +21,7 @@ const byte *begin_license_sha1b = "---BEGIN SHA1 B---";
 const byte *end_license_sha1b = "---END SHA1 B---";
 
 PLICENSE_STRUCT license = NULL;
-RSA *rsa_netas = NULL;
+RSA *rsa_provider = NULL;
 RSA *rsa_client = NULL;
 
 byte *session_key = NULL;
@@ -47,7 +47,7 @@ byte *fullname(byte *name, byte *fullname) {
 
 void program_exit(int exit_code) {
 
-	if (rsa_netas) RSA_free(rsa_netas);
+	if (rsa_provider) RSA_free(rsa_provider);
 	if (rsa_client) RSA_free(rsa_client);
 
 	if (session_key) free(session_key);
@@ -66,11 +66,11 @@ void program_exit(int exit_code) {
 
 void provider_private_key_load() {
 	byte fname[_MAX_PATH];
-	rsa_netas = load_key(fullname(pem_netas, fname), true, false);
-	if (!rsa_netas)
+	rsa_provider = rsa_private_key_load_from_file(fullname(pem_provider, fname));
+	if (!rsa_provider)
 		program_exit(2);
 
-	write_publickey(fullname(pem_public, fname), rsa_netas);
+	publickey_write_to_file(fullname(pem_public, fname), rsa_provider);
 }
 
 void load_message_from_client() {
@@ -87,10 +87,10 @@ void session_key_parse() {
 
 	b64_buffer = extract_subs(message_buffer, begin_session, end_session, true);
 	if (b64_buffer) {
-		len = decode_b64(b64_buffer, &enc_buffer);
+		len = base64_decode(b64_buffer, &enc_buffer);
 		if (len) {
 			session_key = malloc(len);
-			len = private_decrypt(len, enc_buffer, session_key, rsa_netas);
+			len = private_decrypt_buffer(len, enc_buffer, session_key, rsa_provider);
 			if (len)
 				session_key[len] = 0;
 			free(enc_buffer);
@@ -117,7 +117,7 @@ void client_public_key_parse() {
 			fputs(end_public, fd);
 			fputs("\n", fd);
 			fclose(fd);
-			rsa_client = load_key(fullname(pem_temp_client, fname), false, true);
+			rsa_client = rsa_public_key_load_from_file(fullname(pem_temp_client, fname));
 		}
 		free(b64_buffer);
 	}
@@ -135,9 +135,9 @@ void license_message_parse() {
 	if (!b64_buffer)
 		program_exit(5);
 
-	int len = decode_b64(b64_buffer, &enc_buffer);
+	int len = base64_decode(b64_buffer, &enc_buffer);
 	if (len) {
-		len = crypt(enc_buffer, len, &license_buffer, session_key, decrypt);
+		len = decrypt(enc_buffer, len, &license_buffer, session_key);
 		if (len)
 			license_buffer[len] = 0;
 		free(enc_buffer);
@@ -164,13 +164,13 @@ void license_message_parse() {
 
 void sha1_license_buffer() {
 	byte *sha1_buffer = NULL;
-	byte *b64_netas_enc_buffer = NULL;
+	byte *b64_provider_enc_buffer = NULL;
 	byte half_buffer[512];
 
 	if (!sha1(license_buffer_ex, strlen(license_buffer_ex), &sha1_buffer))
 		program_exit(7);
 
-	int elen = private_encrypt_b64(strlen(sha1_buffer), sha1_buffer, &b64_netas_enc_buffer, rsa_netas);
+	int elen = private_encrypt_b64(strlen(sha1_buffer), sha1_buffer, &b64_provider_enc_buffer, rsa_provider);
 	if (elen < 1) {
 		print_last_error();
 		free(sha1_buffer);
@@ -179,25 +179,25 @@ void sha1_license_buffer() {
 
 	free(sha1_buffer);
 
-	int slen = strlen(b64_netas_enc_buffer);
+	int slen = strlen(b64_provider_enc_buffer);
 	int blen = slen / 2;
 
 	memset(half_buffer, 0, 512);
-	memcpy(half_buffer, b64_netas_enc_buffer, blen);
+	memcpy(half_buffer, b64_provider_enc_buffer, blen);
 
 	elen = public_encrypt_b64(strlen(half_buffer), half_buffer, &license_sha1a, rsa_client);
 	if (elen < 1) {
 		print_last_error();
-		free(b64_netas_enc_buffer);
+		free(b64_provider_enc_buffer);
 		program_exit(7);
 	}
 
 	memset(half_buffer, 0, 512);
-	memcpy(half_buffer, b64_netas_enc_buffer + blen, slen - blen);
+	memcpy(half_buffer, b64_provider_enc_buffer + blen, slen - blen);
 
 	elen = public_encrypt_b64(strlen(half_buffer), half_buffer, &license_sha1b, rsa_client);
 
-	free(b64_netas_enc_buffer);
+	free(b64_provider_enc_buffer);
 
 	if (elen < 1) {
 		print_last_error();
@@ -216,12 +216,12 @@ void client_license_write() {
 		fputs("\n", fd);
 		fputs(begin_license_sha1a, fd);
 		fputs("\n", fd);
-		b64_write_to_file(license_sha1a, fd);
+		base64_write_to_file(license_sha1a, fd);
 		fputs(end_license_sha1a, fd);
 		fputs("\n", fd);
 		fputs(begin_license_sha1b, fd);
 		fputs("\n", fd);
-		b64_write_to_file(license_sha1b, fd);
+		base64_write_to_file(license_sha1b, fd);
 		fputs(end_license_sha1b, fd);
 		fputs("\n", fd);
 
@@ -321,15 +321,19 @@ int main(int argc, char **argv)
 	memset(path_name, 0, _MAX_PATH);
 	strcpy(path_name, argv[1]);
 
-	if (argc == 3)
-		if (!memcmp("test", argv[2], 4)) {
+	if (argc == 3) {
+                if (!memcmp("test", argv[2], 4)) {
 			client_license_test();
 			program_exit(0);
 		}
-		else if (!_itoa(atoi(argv[2]), license_day, 10)) {
+
+                int test_day = atoi(argv[2]);
+                if ( test_day <= 0 || test_day > 90 ) {
                         program_usage();
                         program_exit(0);
                 }
+                snprintf(license_day, 10, "%d", test_day);
+        }
 
 	provider_private_key_load();
 

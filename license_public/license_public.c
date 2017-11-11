@@ -46,7 +46,7 @@ void client_private_key_load() {
 		print_last_error();
 		program_exit(1);
 	}
-	write_publickey(fullname(pub_client, fname), rsa_client);
+	publickey_write_to_file(fullname(pub_client, fname), rsa_client);
 }
 
 void provider_public_key_load() {
@@ -71,14 +71,14 @@ void session_key_create() {
 
 	memset(enc_session_key, 0, size);
 
-	int elen = public_encrypt(strlen(session_key), session_key, enc_session_key, rsa_netas);
+	int elen = public_encrypt_buffer(strlen(session_key), session_key, enc_session_key, rsa_netas);
 	if (!elen) {
 		free(enc_session_key);
 		program_exit(41);
 	}
 
 	byte *b64_session_key = NULL;
-	encode_b64(enc_session_key, elen, &b64_session_key);
+	base64_encode(enc_session_key, elen, &b64_session_key);
 	if (!b64_session_key) {
 		free(enc_session_key);
 		program_exit(42);
@@ -87,7 +87,7 @@ void session_key_create() {
 	free(enc_session_key);
 
 	fputs("---BEGIN SESSION KEY---\n", fd_license);
-	b64_write_to_file(b64_session_key, fd_license);
+	base64_write_to_file(b64_session_key, fd_license);
 	fputs("---END SESSION KEY---\n", fd_license);
 
 	free(b64_session_key);
@@ -123,7 +123,7 @@ void client_license_info_add() {
 	free(clr_license);
 
 	byte *b64_license = NULL;
-	encode_b64(enc_license, elen, &b64_license);
+	base64_encode(enc_license, elen, &b64_license);
 	if (!b64_license) {
 		free(enc_license);
 		program_exit(63);
@@ -132,7 +132,7 @@ void client_license_info_add() {
 	free(enc_license);
 
 	fputs("---BEGIN LICENSE---\n", fd_license);
-	b64_write_to_file(b64_license, fd_license);
+	base64_write_to_file(b64_license, fd_license);
 	fputs("---END LICENSE---\n", fd_license);
 
 	free(b64_license);
@@ -169,7 +169,7 @@ int main(int argc, char **argv)
 
 	client_public_key_add();
 
-	license = init_license(argc, argv);
+	license = license_init(argc, argv);
 	if (!license)
 		program_exit(6);
 
