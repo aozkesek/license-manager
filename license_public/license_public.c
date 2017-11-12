@@ -7,19 +7,19 @@
 
 #include <license.h>
 
-const byte *pri_client = "pri_client.pem";
-const byte *pub_client = "pub_client.pem";
-const byte *pub_netas = "pub_netas.pem";
-const byte *client_lic = "client.lic";
+const char *pri_client = "pri_client.pem";
+const char *pub_client = "pub_client.pem";
+const char *pub_provider = "pub_provider.pem";
+const char *client_lic = "client.lic";
 
-PLICENSE_STRUCT *license = NULL;
+PLICENSE_STRUCT license = NULL;
 RSA *rsa_client = NULL;
-RSA *rsa_netas = NULL;
+RSA *rsa_provider = NULL;
 FILE *fd_license = NULL;
 byte *session_key = NULL;
-byte path_name[_MAX_PATH];
+char path_name[_MAX_PATH];
 
-byte *fullname(byte *name, byte *fullname) {
+char *fullname(const char *name, char *fullname) {
 
 	sprintf(fullname, "%s\\%s", path_name, name);
 	return  fullname;
@@ -28,7 +28,7 @@ byte *fullname(byte *name, byte *fullname) {
 
 void program_exit(int exit_code) {
 
-	if (!rsa_netas) RSA_free(rsa_netas);
+	if (!rsa_provider) RSA_free(rsa_provider);
 	if (!rsa_client) RSA_free(rsa_client);
 
 	if (session_key) free(session_key);
@@ -39,9 +39,9 @@ void program_exit(int exit_code) {
 }
 
 void client_private_key_load() {
-	byte fname[_MAX_PATH];
+	char fname[_MAX_PATH];
 
-	rsa_client = load_key(fullname(pri_client, fname), true, false);
+	rsa_client = rsa_privatekey_load_from_file(fullname(pri_client, fname));
 	if (!rsa_client) {
 		print_last_error();
 		program_exit(1);
@@ -50,10 +50,10 @@ void client_private_key_load() {
 }
 
 void provider_public_key_load() {
-	byte fname[_MAX_PATH];
+	char fname[_MAX_PATH];
 
-	rsa_netas = load_key(fullname(pub_netas, fname), false, true);
-	if (!rsa_netas) {
+	rsa_provider = rsa_publickey_read_from_file(fullname(pub_provider, fname));
+	if (!rsa_provider) {
 		print_last_error();
 		program_exit(2);
 	}
@@ -66,12 +66,12 @@ void session_key_create() {
 	if (!session_key)
 		program_exit(40);
 
-	int size = RSA_size(rsa_netas);
+	int size = RSA_size(rsa_provider);
 	byte *enc_session_key = malloc(size);
 
 	memset(enc_session_key, 0, size);
 
-	int elen = public_encrypt_buffer(strlen(session_key), session_key, enc_session_key, rsa_netas);
+	int elen = public_encrypt_buffer(strlen((char *)session_key), session_key, enc_session_key, rsa_provider);
 	if (!elen) {
 		free(enc_session_key);
 		program_exit(41);
@@ -95,13 +95,13 @@ void session_key_create() {
 }
 
 void client_public_key_add() {
-	byte fname[_MAX_PATH];
+	char fname[_MAX_PATH];
 
 	byte *public_client = load_from_file(fullname(pub_client, fname));
 	if (!public_client)
 		program_exit(5);
 
-	fputs(public_client, fd_license);
+	fputs((const char *)public_client, fd_license);
 	free(public_client);
 
 }
@@ -109,12 +109,12 @@ void client_public_key_add() {
 void client_license_info_add() {
 
 	byte *clr_license = NULL;
-	license_to_string(license, &clr_license);
+	license_to_json_string(license, (char **)&clr_license);
 	if (!clr_license)
 		program_exit(61);
 
 	byte *enc_license = NULL;
-	int elen = crypt(clr_license, strlen(clr_license), &enc_license, session_key, encrypt);
+	int elen = encrypt(clr_license, strlen((char *)clr_license), &enc_license, session_key);
 	if (!elen || !enc_license) {
 		free(clr_license);
 		program_exit(62);
@@ -147,9 +147,9 @@ void program_usage() {
 
 }
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
-	byte fname[_MAX_PATH];
+	char fname[_MAX_PATH];
 
 	if (argc < 3)
 		program_usage();

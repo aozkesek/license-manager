@@ -1,12 +1,10 @@
-CC := clang -c -O2
-LD := ld -S -x 
+CC := clang -O2
 INC_DIRS := -I../../openssl/include/ -I../liblicense/
-LIB_DIRS := -L../../openssl/ -L../liblicense/
-LIBS := -llicense -lcrypto
+LIB_DIRS := -Wl,-L../../openssl/ -Wl,-L../liblicense/
+LIBS := -Wl,-llicense -Wl,-lcrypto
 
 license_private : license_private.c
-	$(CC) $(INC_DIRS) license_private.c
-	$(LD) license_private.o $(LIBS) $(LIB_DIRS) -lc -o license_private
+	$(CC) $(INC_DIRS) $(LIBS) $(LIB_DIRS) license_private.c -o license_private
 
 clean :
 	rm -f license_private

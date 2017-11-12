@@ -11,7 +11,7 @@ extern const byte b64[];
 const byte u[] =
 	{ 1, 2, 3, 5, 8, 13, 21, 34, 0 };
 
-void __stdcall publickey_write_to_file(byte *fileName, RSA* rsa) {
+void __stdcall publickey_write_to_file(const char *fileName, RSA* rsa) {
 
     BIO* bp = BIO_new_file(fileName, "w+");
     if (bp) {
@@ -24,7 +24,7 @@ void __stdcall publickey_write_to_file(byte *fileName, RSA* rsa) {
 		print_last_error();
 }
 
-RSA *__stdcall publickey_read_from_file(byte *fileName) {
+RSA *__stdcall publickey_read_from_file(const char *fileName) {
 
     BIO* bp = BIO_new_file(fileName, "r");
     if (bp) {
@@ -41,11 +41,11 @@ RSA *__stdcall publickey_read_from_file(byte *fileName) {
     return NULL;
 }
 
-void __stdcall privatekey_write_to_file(byte *fileName, RSA* rsa, byte *u) {
+void __stdcall privatekey_write_to_file(const char *fileName, RSA* rsa, const byte *u) {
 
     BIO* bp = BIO_new_file(fileName, "w+");
     if (bp) {
-		int rc = PEM_write_bio_RSAPrivateKey(bp, rsa, NULL, NULL, 0, NULL, u);
+		int rc = PEM_write_bio_RSAPrivateKey(bp, rsa, NULL, NULL, 0, NULL, (void *)u);
 		if (rc != 1)
 			print_last_error();
 		BIO_free(bp);
@@ -54,11 +54,11 @@ void __stdcall privatekey_write_to_file(byte *fileName, RSA* rsa, byte *u) {
 		print_last_error();
 }
 
-RSA *__stdcall privatekey_read_from_file(byte *fileName, byte *u) {
+RSA *__stdcall privatekey_read_from_file(const char *fileName, const byte *u) {
 
     BIO* bp = BIO_new_file(fileName, "r");
     if (bp) {
-		RSA* rc = PEM_read_bio_RSAPrivateKey(bp, NULL, NULL, u);
+		RSA* rc = PEM_read_bio_RSAPrivateKey(bp, NULL, NULL, (void *)u);
 		if (!rc)
 			print_last_error();
 
@@ -115,7 +115,7 @@ int public_encrypt_base64_buffer(int slen, byte *source, byte **target, RSA *rsa
 	if (!b64)
 		return -4;
 
-	return strlen(b64);
+	return strlen((const char *)b64);
 
 }
 
@@ -147,7 +147,7 @@ int private_encrypt_base64_buffer(int slen, byte *source, byte **target, RSA *rs
 	if (!b64)
 		return -4;
 
-	return strlen(b64);
+	return strlen((const char *)b64);
 
 }
 
@@ -158,7 +158,7 @@ int public_decrypt_base64_buffer(byte *source, byte **target, RSA *rsa)  {
 
 	int enc_size = RSA_size(rsa);
 
-	if (!source || enc_size >= strlen(source))
+	if (!source || enc_size >= strlen((const char *)source))
 		return -2;
 
 	if (!target)
@@ -189,7 +189,7 @@ int private_decrypt_base64_buffer(byte *source, byte **target, RSA *rsa)  {
 
 	int enc_size = RSA_size(rsa);
 
-	if (!source || enc_size >= strlen(source))
+	if (!source || enc_size >= strlen((const char *)source))
 		return -2;
 
 	if (!target)
@@ -294,7 +294,7 @@ RSA *rsa_generate_key() {
 
 }
 
-RSA *__stdcall rsa_public_key_read_from_file(byte *fname) {
+RSA *__stdcall rsa_publickey_read_from_file(const char *fname) {
     struct stat filestat;
     RSA* rsa;
     int rc;
@@ -308,7 +308,7 @@ RSA *__stdcall rsa_public_key_read_from_file(byte *fname) {
     return rsa;
 }
 
-RSA *__stdcall rsa_public_key_load_from_file(byte *fname) {
+RSA *__stdcall rsa_publickey_load_from_file(const char *fname) {
     struct stat filestat;
     RSA* rsa;
     int rc;
@@ -330,7 +330,7 @@ RSA *__stdcall rsa_public_key_load_from_file(byte *fname) {
     return rsa;
 }
 
-RSA *__stdcall rsa_private_key_read_from_file(byte *fname) {
+RSA *__stdcall rsa_privatekey_read_from_file(const char *fname) {
     struct stat filestat;
     RSA* rsa;
     int rc;
@@ -344,7 +344,7 @@ RSA *__stdcall rsa_private_key_read_from_file(byte *fname) {
     return rsa;
 }
 
-RSA *__stdcall rsa_private_key_load_from_file(byte *fname) {
+RSA *__stdcall rsa_privatekey_load_from_file(const char *fname) {
     struct stat filestat;
     RSA* rsa;
     int rc;

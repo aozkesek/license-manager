@@ -2,12 +2,14 @@ CC := clang -c -O2
 AR := ar -ru
 INC_SSL := -I ../../openssl/include/
 LIB_SSL := ../../openssl/
-OBJS := license_sha1.o license_b64.o license_evp.o license_rsa.o
+OBJS := license.o license_b64.o license_evp.o license_rsa.o license_sha1.o 
 LIBS := 
 
-liblicense.a : $(OBJS) license.h license.c
-	$(CC) $(INC_SSL) license.c
+liblicense.a : $(OBJS)
 	$(AR) liblicense.a license.o $(OBJS) $(LIBS)
+
+license.o : license.c license.h 
+	$(CC) $(INC_SSL) license.c
 
 license_b64.o : license_b64.c license.h
 	$(CC) $(INC_SSL) license_b64.c

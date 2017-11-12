@@ -24,25 +24,25 @@ byte *__stdcall sha1(byte *source, int slen, byte **target) {
 	return base64_encode(sha1_buffer, SHA_DIGEST_LENGTH, target);
 }
 
-int license_sha1_initialize(PLICENSESHA1 plsha1, byte *pem_path) {
+int license_sha1_initialize(PLICENSESHA1 plsha1, const char *pem_path) {
 
 	if (!plsha1)
 		return 1;
 
 	memset(plsha1, 0, sizeof(LICENSESHA1));
 	
-	byte pemName[_MAX_PATH];
+	char pemName[_MAX_PATH];
 	memset(pemName, 0, _MAX_PATH);
 	sprintf(pemName, "%s\\pub_provider.pem", pem_path);
 
-	plsha1->pub_provider = rsa_public_key_read_from_file(pemName);
+	plsha1->pub_provider = rsa_publickey_read_from_file(pemName);
 	if (!plsha1->pub_provider)
 		return 1;
 	
 	memset(pemName, 0, _MAX_PATH);
 	sprintf(pemName, "%s\\pri_client.pem", pem_path);
 
-	plsha1->pri_client = rsa_private_key_read_from_file(pemName);
+	plsha1->pri_client = rsa_privatekey_read_from_file(pemName);
 	if (!plsha1->pri_client)
 		return 1;
 
@@ -102,7 +102,7 @@ int license_sha1_decrypt(PLICENSESHA1 plsha1, byte *sha1a, byte *sha1b) {
 }
 
 
-int __stdcall LicenseSha1(byte *pem_path, byte *source, byte *sha1a, byte *sha1b) {
+int __stdcall LicenseSha1(const char *pem_path, byte *source, byte *sha1a, byte *sha1b) {
 
 	if (!source || !sha1a || !sha1b)
 		return -1;
@@ -116,7 +116,7 @@ int __stdcall LicenseSha1(byte *pem_path, byte *source, byte *sha1a, byte *sha1b
 		return -2;
 
 	lsha1.source_sha1 = NULL;
-	if (!sha1(source, strlen(source), &lsha1.source_sha1)) {
+	if (!sha1(source, strlen((const char *)source), &lsha1.source_sha1)) {
 		license_sha1_finalize(&lsha1);
 		return -3;
 	}

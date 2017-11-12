@@ -6,7 +6,7 @@
 
 #include "license.h"
 
-PLICENSE_STRUCT __stdcall license_init(int argc, byte **argv) {
+PLICENSE_STRUCT __stdcall license_init(int argc, const char **argv) {
     PLICENSE_STRUCT license;
     PNIPPS_STRUCT nipps;
 
@@ -16,7 +16,7 @@ PLICENSE_STRUCT __stdcall license_init(int argc, byte **argv) {
         nipps = malloc(sizeof(NIPPS_STRUCT) * argc - 3);
 
 	int i = 3, k = 0;
-	byte *p = NULL;
+	char *p = NULL;
 	for (; i < argc; i++) {
 		p = strstr(argv[i], ":");
 		if (!p)
@@ -37,7 +37,9 @@ PLICENSE_STRUCT __stdcall license_init(int argc, byte **argv) {
 
     license->Licensed_To = "CLIENT";
     license->Service_Count = k;
-    license->Version = argv[2];
+    license->Version = malloc(strlen(argv[2]) + 1);
+    memset(license->Version, 0, strlen(argv[2]) + 1);
+    strcpy(license->Version, argv[2]);
 	license->Issued_By = "TECHNICIAN";
     license->Services = nipps;
 
@@ -57,8 +59,8 @@ int __stdcall license_size(PLICENSE_STRUCT plicense) {
 	if (!plicense)
 		return 0;
 
-	byte *license_json = "{'Version':'','LicensedTo':'','IssuedBy':'','Services':[]}";
-	byte *license_services_json = "{'Name':'','Version':''},";
+	char *license_json = "{'Version':'','LicensedTo':'','IssuedBy':'','Services':[]}";
+	char *license_services_json = "{'Name':'','Version':''},";
 
 	len += strlen(plicense->Issued_By);
 	len += strlen(plicense->Licensed_To);
@@ -75,7 +77,7 @@ int __stdcall license_size(PLICENSE_STRUCT plicense) {
 	return len + strlen(license_json) + plicense->Service_Count * strlen(license_services_json);
 }
 
-byte *__stdcall license_to_string(PLICENSE_STRUCT plicense, byte **slicense) {
+char *__stdcall license_to_json_string(PLICENSE_STRUCT plicense, char **slicense) {
 
 	if (!plicense || !slicense)
 		return NULL;
@@ -114,8 +116,8 @@ byte *__stdcall license_to_string(PLICENSE_STRUCT plicense, byte **slicense) {
 void __stdcall license_print(PLICENSE_STRUCT plicense) {
  	if (!plicense)
 		return;
-	byte *buffer = NULL;
-        printf("\n%s\n", license_to_string(plicense, &buffer));
+	char *buffer = NULL;
+    printf("\n%s\n", license_to_json_string(plicense, &buffer));
 	free(buffer);
 }
 
@@ -130,7 +132,7 @@ byte *__stdcall reallocate(byte **b, int blen) {
 	return *b;
 }
 
-byte *__stdcall load_from_file(byte *fname) {
+byte *__stdcall load_from_file(const char *fname) {
 
 	FILE *file = fopen(fname, "r");
 	if (!file)
@@ -155,32 +157,50 @@ byte *__stdcall load_from_file(byte *fname) {
 	return message;
 }
 
-byte *__stdcall extract_subs(byte *lic_client, byte *begin_title, byte *end_title, bool trim) {
+char *__stdcall sub_value_extract_trim(const char *lic_client, const char *begin_title, const char *end_title) {
 
-	byte *p_begin_title = strstr(lic_client, begin_title);
+	char *p_begin_title = strstr(lic_client, begin_title);
 	if (!p_begin_title)
 		return NULL;
 
-	byte *p_end_title = strstr(lic_client, end_title);
+	char *p_end_title = strstr(lic_client, end_title);
 	if (!p_end_title)
 		return NULL;
-
 
 	int i = 0,
 		j = 0,
 		pos = strlen(begin_title),
 		len = p_end_title - p_begin_title - pos;
-	byte *key = malloc(len + 1);
+	char *key = malloc(len + 1);
 	memset(key, 0, len + 1);
 	while (i < len) {
-		if (trim) {
-			if (p_begin_title[pos + i] != '\n')
-				key[j++] = p_begin_title[pos + i];
-		}
-		else
+		if (p_begin_title[pos + i] != '\n')
 			key[j++] = p_begin_title[pos + i];
 		i++;
 	}
+
+	return key;
+
+}
+
+char *__stdcall sub_value_extract(const char *lic_client, const char *begin_title, const char *end_title) {
+
+	char *p_begin_title = strstr(lic_client, begin_title);
+	if (!p_begin_title)
+		return NULL;
+
+	char *p_end_title = strstr(lic_client, end_title);
+	if (!p_end_title)
+		return NULL;
+
+	int i = 0,
+		j = 0,
+		pos = strlen(begin_title),
+		len = p_end_title - p_begin_title - pos;
+	char *key = malloc(len + 1);
+	memset(key, 0, len + 1);
+	while (i < len)
+		key[j++] = p_begin_title[pos + i++];
 
 	return key;
 

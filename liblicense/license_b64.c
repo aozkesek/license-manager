@@ -36,7 +36,7 @@ int __stdcall base64_decode(byte *source, byte **target) {
 		
 	int i = 0, 
 		j = 0, 
-		slen = strlen(source), 
+		slen = strlen((const char *)source),
 		tlen = (slen * 3 / 4);
 	
 	if (slen % 4)
@@ -105,7 +105,7 @@ void __stdcall base64_write_to_file(byte *b64, FILE *fd) {
 	if (!b64 || !fd)
 		return;
 		
-	int l = strlen(b64),
+	int l = strlen((const char *)b64),
 		r = l % 64,
 		k = (l - r) / 64,
 		i = 0;
