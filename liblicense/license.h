@@ -18,39 +18,45 @@
 typedef enum { false, true } bool;
 typedef unsigned char byte;
 
-typedef struct _NIPPS_STRUCT
+typedef struct _SERVICE_STRUCT
 {
-	char *Name;
-	char *Version;
+	char *service_name;
+	char *service_version;
 
-} NIPPS_STRUCT, *PNIPPS_STRUCT;
+} SERVICE_STRUCT, *PSERVICE_STRUCT;
 
 typedef struct _LICENSE_STRUCT
 {
 
-	char *Version;
-	char *Licensed_To;
-	char *Issued_By;
-	int Service_Count;
-	PNIPPS_STRUCT Services;
+	char *license_version;
+	char *license_acquirer;
+	char *license_issuer;
+	int license_service_size;
+	PSERVICE_STRUCT license_services;
 
 } LICENSE_STRUCT, *PLICENSE_STRUCT;
+
+#define print_last_error() print_last_error_m(__FILE__, __FUNCTION__, __LINE__)
+#define exit_on_error() exit_on_error_m(__FILE__, __FUNCTION__, __LINE__)
+
+extern void program_exit(int error_code);
 
 // WARNING: you can only call this vvv from the managed code.
 __declspec(dllexport) int __stdcall LicenseSha1(const char *pem_path, byte *source, byte *sha1a, byte *sha1b);
 // WARNING: you can only call this ^^^ in managed code.
 
-
 // do not call any of these from the managed code,
 // it is not guaranteed not to get an access violation error.
+__declspec(dllexport) void __stdcall lib_initialize();
+__declspec(dllexport) void __stdcall lib_finalize();
 
 __declspec(dllexport) byte * __stdcall reallocate(byte **b, int blen);
-__declspec(dllexport) byte * __stdcall sha1(byte *source, int slen, byte **target);
+__declspec(dllexport) byte * __stdcall sha1(const byte *source, const int slen, byte **target);
 
-__declspec(dllexport) int __stdcall base64_decode(byte *source, byte **target);
-__declspec(dllexport) byte * __stdcall base64_encode(byte *source, int slen, byte **target);
-__declspec(dllexport) void __stdcall base64_write_to_file(byte *b64, FILE *fd);
-__declspec(dllexport) byte * __stdcall hex_encode(byte *source, int slen, byte **target);
+__declspec(dllexport) int __stdcall base64_decode(const byte *source, byte **target);
+__declspec(dllexport) byte * __stdcall base64_encode(const byte *source, const int slen, byte **target);
+__declspec(dllexport) void __stdcall base64_write_to_file(const byte *b64, FILE *fd);
+__declspec(dllexport) byte * __stdcall hex_encode(const byte *source, const int slen, byte **target);
 
 __declspec(dllexport) PLICENSE_STRUCT __stdcall license_init(int argc, const char **argv);
 __declspec(dllexport) void __stdcall license_free(PLICENSE_STRUCT plicense);
@@ -83,11 +89,12 @@ __declspec(dllexport) int __stdcall private_encrypt_b64(int slen, byte *source, 
 __declspec(dllexport) int __stdcall private_decrypt_b64(byte *source, byte **target, RSA *rsa);
 
 //message encrypt/decrpyt functions
-__declspec(dllexport) int __stdcall encrypt(byte *source, int slen, byte **target, byte *session_key);
-__declspec(dllexport) int __stdcall decrypt(byte *source, int slen, byte **target, byte *session_key);
+__declspec(dllexport) int __stdcall encrypt(const byte *source, const int slen, byte **target, const byte *session_key);
+__declspec(dllexport) int __stdcall decrypt(const byte *source, const int slen, byte **target, const byte *session_key);
 
 //do not call in non-console application.  the output goes to console's stdout.
-__declspec(dllexport) void __stdcall print_last_error();
+__declspec(dllexport) void __stdcall print_last_error_m(const char *file_name, const char *function_name, const int line_number);
+__declspec(dllexport) void __stdcall exit_on_error_m(const char *file_name, const char *function_name, const int line_number);
 
 
 #endif //_LICENSE_H

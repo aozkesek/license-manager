@@ -34,13 +34,13 @@ char path_name[_MAX_PATH];
 char license_day[10];
 
 void program_usage() {
-	printf("usage:\nlicense_manager <full_path_of_the_pem_files> [test | day_count]");
+	printf("usage:\nlicense_manager <full_path_of_the_pem_files> [test | day_count]\n");
 	exit(1);
 }
 
 char *fullname(const char *name, char *fullname) {
 
-	sprintf(fullname, "%s\\%s", path_name, name);
+	sprintf(fullname, "%s/%s", path_name, name);
 	return  fullname;
 
 }
@@ -57,10 +57,10 @@ void program_exit(int exit_code) {
 	if (license_buffer) free(license_buffer);
 	if (license_buffer_ex) free(license_buffer_ex);
 
+	lib_finalize();
+
 	printf("program terminated with code (%d).\n", exit_code);
-	printf("press enter key...");
-	char c;
-	scanf(&c, "%c");
+
 	exit(exit_code);
 }
 
@@ -312,19 +312,21 @@ void client_license_test() {
 int main(int argc, char **argv)
 {
 
-	if (argc < 2) {
+        lib_initialize();
+
+        if (argc < 2) {
                 program_usage();
                 program_exit(0);
         }
 
-	memset(path_name, 0, _MAX_PATH);
-	strcpy(path_name, argv[1]);
+        memset(path_name, 0, _MAX_PATH);
+        strcpy(path_name, argv[1]);
 
-	if (argc == 3) {
+        if (argc == 3) {
                 if (!memcmp("test", argv[2], 4)) {
-			client_license_test();
-			program_exit(0);
-		}
+                	        client_license_test();
+                	        program_exit(0);
+                }
 
                 int test_day = atoi(argv[2]);
                 if ( test_day <= 0 || test_day > 90 ) {
@@ -334,21 +336,21 @@ int main(int argc, char **argv)
                 snprintf(license_day, 10, "%d", test_day);
         }
 
-	provider_private_key_load();
+        provider_private_key_load();
 
-	load_message_from_client();
+        load_message_from_client();
 
-	session_key_parse();
+        session_key_parse();
 
-	client_public_key_parse();
+        client_public_key_parse();
 
-	license_message_parse();
+        license_message_parse();
 
-	sha1_license_buffer();
+        sha1_license_buffer();
 
-	client_license_write();
+        client_license_write();
 
-	client_license_test();
+        client_license_test();
 
-	program_exit(0);
+        program_exit(0);
 }

@@ -21,7 +21,7 @@ char path_name[_MAX_PATH];
 
 char *fullname(const char *name, char *fullname) {
 
-	sprintf(fullname, "%s\\%s", path_name, name);
+	sprintf(fullname, "%s/%s", path_name, name);
 	return  fullname;
 
 }
@@ -34,6 +34,10 @@ void program_exit(int exit_code) {
 	if (session_key) free(session_key);
 	if (fd_license) fclose(fd_license);
 	if (license) free(license);
+
+	lib_finalize();
+
+	printf("program terminated with code (%d).\n", exit_code);
 
 	exit(exit_code);
 }
@@ -141,7 +145,7 @@ void client_license_info_add() {
 void program_usage() {
 
 	printf("usage:\nlicense_public.exe <full_path_name_of_the_pem_files> " \
-                "<version_of_the_nipps> <phone_service_name:version [phone_service_name_2:version2 ... ]>\n");
+                "<version_of_the_app> <service_name:service_version [service_name_2:service_version2 ... ]>\n");
 
 	program_exit(-1);
 
@@ -150,6 +154,8 @@ void program_usage() {
 int main(int argc, const char **argv)
 {
 	char fname[_MAX_PATH];
+
+	lib_initialize();
 
 	if (argc < 3)
 		program_usage();

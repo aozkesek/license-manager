@@ -4,32 +4,32 @@
 
 #include "license.h"
 
-typedef struct _LICENSESHA1 {
+typedef struct _LICENSE_SHA1_STRUCT {
 	RSA *pub_provider;
 	RSA *pri_client;
 
 	byte *source_sha1;
 	byte *sha1;
 
-} LICENSESHA1, *PLICENSESHA1;
+} LICENSE_SHA1_STRUCT, *PLICENSE_SHA1_STRUCT;
 
-byte *__stdcall sha1(byte *source, int slen, byte **target) {
+byte *__stdcall sha1(const byte *source, const int slen, byte **target) {
 	byte sha1_buffer[SHA_DIGEST_LENGTH];
 	if (!source || !target || slen < 1)
-		return NULL;
+	        exit_on_error();
 
 	if (!SHA1(source, slen, sha1_buffer))
-		return NULL;
+	        exit_on_error();
 
 	return base64_encode(sha1_buffer, SHA_DIGEST_LENGTH, target);
 }
 
-int license_sha1_initialize(PLICENSESHA1 plsha1, const char *pem_path) {
+int license_sha1_initialize(PLICENSE_SHA1_STRUCT plsha1, const char *pem_path) {
 
 	if (!plsha1)
 		return 1;
 
-	memset(plsha1, 0, sizeof(LICENSESHA1));
+	memset(plsha1, 0, sizeof(LICENSE_SHA1_STRUCT));
 	
 	char pemName[_MAX_PATH];
 	memset(pemName, 0, _MAX_PATH);
@@ -49,9 +49,10 @@ int license_sha1_initialize(PLICENSESHA1 plsha1, const char *pem_path) {
 	return 0;
 }
 
-void license_sha1_finalize(PLICENSESHA1 plsha1) {
+void license_sha1_finalize(PLICENSE_SHA1_STRUCT plsha1) {
 
-	if (!plsha1) return;
+	if (!plsha1)
+	        return;
 
 	if (plsha1->source_sha1) free(plsha1->source_sha1);
 	if (plsha1->sha1) free(plsha1->sha1);
@@ -62,7 +63,7 @@ void license_sha1_finalize(PLICENSESHA1 plsha1) {
 
 }
 
-int license_sha1_decrypt(PLICENSESHA1 plsha1, byte *sha1a, byte *sha1b) {
+int license_sha1_decrypt(PLICENSE_SHA1_STRUCT plsha1, byte *sha1a, byte *sha1b) {
 
 	if (!plsha1)
 		return 1;
@@ -107,7 +108,7 @@ int __stdcall LicenseSha1(const char *pem_path, byte *source, byte *sha1a, byte 
 	if (!source || !sha1a || !sha1b)
 		return -1;
 
-	LICENSESHA1 lsha1;
+	LICENSE_SHA1_STRUCT lsha1;
 	byte decrypted_sha1[SHA_DIGEST_LENGTH];
 
 	memset(decrypted_sha1, 0, SHA_DIGEST_LENGTH);

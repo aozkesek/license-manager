@@ -3,7 +3,7 @@
 
 #include "license.h"
 
-int crypto_check(byte *source, int slen, byte **target, byte *session_key) {
+int crypto_check(const byte *source, const int slen, const byte **target, const byte *session_key) {
         if (!source || !slen)
 		return 0;
 
@@ -16,10 +16,10 @@ int crypto_check(byte *source, int slen, byte **target, byte *session_key) {
         return 1;
 }
 
-int __stdcall encrypt(byte *source, int slen, byte **target, byte *session_key) {
+int __stdcall encrypt(const byte *source, const int slen, byte **target, const byte *session_key) {
 
-		if (!crypto_check(source, slen, target, session_key))
-			return 0;
+		if (!crypto_check(source, slen, (const byte **)target, session_key))
+		        exit_on_error();
 
 		int rc, tlen, flen;
 		EVP_CIPHER_CTX *ctx= EVP_CIPHER_CTX_new();
@@ -27,8 +27,8 @@ int __stdcall encrypt(byte *source, int slen, byte **target, byte *session_key) 
 		rc = EVP_EncryptInit_ex(ctx, EVP_bf_cbc(), NULL, session_key, NULL);
 		if (!rc) {
 			print_last_error();
-					EVP_CIPHER_CTX_free(ctx);
-			return 0;
+			EVP_CIPHER_CTX_free(ctx);
+			exit_on_error();
 		}
 
 		tlen = slen + slen % EVP_CIPHER_block_size((const EVP_CIPHER *)ctx) + 1;
@@ -41,7 +41,7 @@ int __stdcall encrypt(byte *source, int slen, byte **target, byte *session_key) 
 		if (!rc) {
 			print_last_error();
 			EVP_CIPHER_CTX_free(ctx);
-			return 0;
+			exit_on_error();
 		}
 
 		tlen += flen;
@@ -51,8 +51,8 @@ int __stdcall encrypt(byte *source, int slen, byte **target, byte *session_key) 
 		return tlen;
 }
 
-int __stdcall decrypt(byte *source, int slen, byte **target, byte *session_key) {
-		if (!crypto_check(source, slen, target, session_key))
+int __stdcall decrypt(const byte *source, const int slen, byte **target, const byte *session_key) {
+		if (!crypto_check(source, slen, (const byte **)target, session_key))
 			return 0;
 
 		int rc, tlen, flen;
@@ -61,8 +61,8 @@ int __stdcall decrypt(byte *source, int slen, byte **target, byte *session_key) 
 		rc = EVP_DecryptInit_ex(ctx, EVP_bf_cbc(), NULL, session_key, NULL);
 		if (!rc) {
 			print_last_error();
-					EVP_CIPHER_CTX_free(ctx);
-			return 0;
+			EVP_CIPHER_CTX_free(ctx);
+			exit_on_error();
 		}
 
 		tlen = slen + slen % EVP_CIPHER_block_size((const EVP_CIPHER *)ctx) + 1;
@@ -75,7 +75,7 @@ int __stdcall decrypt(byte *source, int slen, byte **target, byte *session_key) 
 		if (!rc) {
 			print_last_error();
 			EVP_CIPHER_CTX_free(ctx);
-			return 0;
+			exit_on_error();
 		}
 
 		tlen += flen;

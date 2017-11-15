@@ -10,7 +10,7 @@ const byte b64[] =
 	, 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v'
 	, 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/' };
 
-int b64i(byte c) {
+int b64i(const byte c) {
 	int i = 0;
 	
 	if (c == '+')
@@ -29,10 +29,10 @@ int b64i(byte c) {
 
 }
 
-int __stdcall base64_decode(byte *source, byte **target) {
+int __stdcall base64_decode(const byte *source, byte **target) {
 
 	if (!source || !target)
-		return 0;
+		exit_on_error();
 		
 	int i = 0, 
 		j = 0, 
@@ -40,26 +40,26 @@ int __stdcall base64_decode(byte *source, byte **target) {
 		tlen = (slen * 3 / 4);
 	
 	if (slen % 4)
-		return 0;
+		exit_on_error();
 	
 	if (!(*target))
 		*target = malloc(tlen);
 		
 	memset(*target, 0, tlen);
 	
-	if (source[slen - 1] == '=') {
-		source[slen - 1] = 0;
+	if (source[slen - 2] == '=')
 		tlen--;
-		if (source[slen - 2] == '=') {
-			source[slen - 2] = 0;
-			tlen--;
-		}
-	}
+	if (source[slen - 1] == '=')
+		tlen--;
 		
 	while (i <= slen - 4) {
-		(*target)[j] = (b64i(source[i]) << 2) + (b64i(source[i + 1]) >> 4);
-		(*target)[j + 1] = ((b64i(source[i + 1]) & 0xf) << 4) + (b64i(source[i + 2]) >> 2);
-		(*target)[j + 2] = ((b64i(source[i + 2]) & 0x3) << 6) + b64i(source[i + 3]);
+		byte b0 = source[i],
+				b1 = source[i+1],
+				b2 = source[i+2] == '=' ? 0 : source[i+2],
+				b3 = source[i+3] == '=' ? 0 : source[i+3];
+		(*target)[j] = (b64i(b0) << 2) + (b64i(b1) >> 4);
+		(*target)[j + 1] = ((b64i(b1) & 0xf) << 4) + (b64i(b2) >> 2);
+		(*target)[j + 2] = ((b64i(b2) & 0x3) << 6) + b64i(b3);
 		i += 4;
 		j += 3;
 	}
@@ -67,9 +67,10 @@ int __stdcall base64_decode(byte *source, byte **target) {
 	return tlen;
 }
 
-byte *__stdcall base64_encode(byte *source, int slen, byte **target) {
-	if (!source || !target)
-		return NULL;
+byte *__stdcall base64_encode(const byte *source, const int slen, byte **target) {
+
+        if (!source || !slen || !target)
+		exit_on_error();
 		
 	int i = 0, 
 		j = 0, 
@@ -100,10 +101,10 @@ byte *__stdcall base64_encode(byte *source, int slen, byte **target) {
 	return *target;
 }
 
-void __stdcall base64_write_to_file(byte *b64, FILE *fd) {
+void __stdcall base64_write_to_file(const byte *b64, FILE *fd) {
 	
 	if (!b64 || !fd)
-		return;
+		exit_on_error();
 		
 	int l = strlen((const char *)b64),
 		r = l % 64,
@@ -121,11 +122,14 @@ void __stdcall base64_write_to_file(byte *b64, FILE *fd) {
 	
 }
 
-byte *__stdcall hex_encode(byte *source, int slen, byte **target) {
+byte *__stdcall hex_encode(const byte *source, const int slen, byte **target) {
 	int i = 0, 
 		c,
 		tlen = 1 + slen * 2;
 	
+	if (!source || !slen)
+	        exit_on_error();
+
 	if (!(*target))
 		*target = malloc(tlen);
 		

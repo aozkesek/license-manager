@@ -1,6 +1,6 @@
 SUBDIRS := liblicense license_private license_public
 
-.PHONY: all $(SUBDIRS)
+.PHONY: all cleanall $(SUBDIRS)
 
 all: $(SUBDIRS)
 

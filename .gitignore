@@ -3,3 +3,6 @@
 .*project
 *.o
 *.a
+*.pem
+*.lic
+*.license
