@@ -6,3 +6,6 @@
 *.pem
 *.lic
 *.license
+
+license_private/license_private
+license_public/license_public
