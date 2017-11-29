@@ -7,5 +7,5 @@
 *.lic
 *.license
 
-license_private/license_private
-license_public/license_public
+license_provider/license_provider
+license_customer/license_customer

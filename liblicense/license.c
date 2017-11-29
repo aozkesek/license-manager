@@ -5,6 +5,18 @@ extern const char *prov_pub_pem;
 extern const char *cli_pri_pem;
 extern const char *cli_pub_pem;
 
+void exit_on_error_m(const char *filename, const char *function_name, 
+                        int line_number, int error_code) {
+        
+        printf("vvv program is stopped on error: %d vvv\n(%s:%d::%s)\n",
+                error_code, filename, line_number, function_name);
+  
+        if (error_code < 0)
+                print_last_error();
+        
+        program_exit(error_code);
+}
+
 unsigned char *sha256(const unsigned char *source, const int slen, 
                         unsigned char **target) {
 	
