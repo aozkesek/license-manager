@@ -1,13 +1,14 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <memory.h>
-#include <string.h>
+
 #include <license.h>
 
+#define ERDFILE 0x0001
+
 //global variables
-const char *pem_provider = "pri_provider.pem";
-const char *pem_public = "pub_provider.pem";
+const char *prov_pri_pem = "provider.pem";
+const char *prov_pub_pem = "public_provider.pem";
 const char *client_lic = "client.lic";
+char *cli_pri_pem = NULL;
+char *cli_pub_pem = NULL;
 
 const char *begin_session = "---BEGIN SESSION KEY---";
 const char *end_session = "---END SESSION KEY---";
@@ -20,29 +21,22 @@ const char *end_license_sha1a = "---END SHA1 A---";
 const char *begin_license_sha1b = "---BEGIN SHA1 B---";
 const char *end_license_sha1b = "---END SHA1 B---";
 
-PLICENSE_STRUCT license = NULL;
+PLICENSE_SHA_STRUCT license = NULL;
 RSA *rsa_provider = NULL;
 RSA *rsa_client = NULL;
 
-byte *session_key = NULL;
-byte *license_buffer = NULL;
-byte *license_buffer_ex = NULL;
-byte *message_buffer = NULL;
-byte *license_sha1a = NULL;
-byte *license_sha1b = NULL;
-char path_name[_MAX_PATH];
+unsigned char *session_key = NULL;
+unsigned char *license_buffer = NULL;
+unsigned char *license_buffer_ex = NULL;
+unsigned char *message_buffer = NULL;
+unsigned char *license_sha1a = NULL;
+unsigned char *license_sha1b = NULL;
+
 char license_day[10];
 
 void program_usage() {
-	printf("usage:\nlicense_manager <full_path_of_the_pem_files> [test | day_count]\n");
+	printf("usage:\nlicense_manager [test | day_count]\n");
 	exit(1);
-}
-
-char *fullname(const char *name, char *fullname) {
-
-	sprintf(fullname, "%s/%s", path_name, name);
-	return  fullname;
-
 }
 
 void program_exit(int exit_code) {
@@ -57,7 +51,7 @@ void program_exit(int exit_code) {
 	if (license_buffer) free(license_buffer);
 	if (license_buffer_ex) free(license_buffer_ex);
 
-	lib_finalize();
+	crypto_final();
 
 	printf("program terminated with code (%d).\n", exit_code);
 
@@ -65,32 +59,53 @@ void program_exit(int exit_code) {
 }
 
 void provider_private_key_load() {
-	char fname[_MAX_PATH];
-	rsa_provider = rsa_privatekey_load_from_file(fullname(pem_provider, fname));
-	if (!rsa_provider)
-		program_exit(2);
-
-	publickey_write_to_file(fullname(pem_public, fname), rsa_provider);
+	rsa_provider = rsa_privatekey_load_from_file(prov_pri_pem);
+	publickey_write_to_file(prov_pub_pem, rsa_provider);
 }
 
+int load_from_file(const char *fname, char **buffer) {
+ 
+        if (!buffer)
+                exit_on_error(-ERDFILE);
+                
+        FILE *file = fopen(fname, "r");
+        if (!file)
+                exit_on_error(-ERDFILE);
+ 
+        if (fseek(file, 0, SEEK_END)) {
+                fclose(file);
+                exit_on_error(-ERDFILE);
+        }
+
+        int flen = ftell(file);
+        rewind(file);
+
+        reallocate(buffer, flen + 1); 
+        fread(buffer, flen, 1, file); 
+        fclose(file);
+ 
+        buffer[flen] = 0;
+ 
+        return flen;
+}
+ 
 void load_message_from_client() {
-	char fname[_MAX_PATH];
-	message_buffer = load_from_file(fullname(client_lic, fname));
-	if (!message_buffer)
-		program_exit(1);
+	message_buffer = load_from_file(client_lic);
 }
 
 void session_key_parse() {
 	char *b64_buffer = NULL;
-	byte *enc_buffer = NULL;
+	unsigned char *enc_buffer = NULL;
 	int len;
 
-	b64_buffer = sub_value_extract_trim((const char *)message_buffer, begin_session, end_session);
+	b64_buffer = sub_value_extract_trim((const char *)message_buffer, 
+                                        begin_session, end_session);
 	if (b64_buffer) {
-		len = base64_decode((byte *)b64_buffer, &enc_buffer);
+		len = base64_decode((unsigned char *)b64_buffer, &enc_buffer);
 		if (len) {
 			session_key = malloc(len);
-			len = private_decrypt_buffer(len, enc_buffer, session_key, rsa_provider);
+			len = private_decrypt_buffer(len, enc_buffer, 
+                                                session_key, rsa_provider);
 			if (len)
 				session_key[len] = 0;
 			free(enc_buffer);
@@ -106,7 +121,7 @@ void session_key_parse() {
 void client_public_key_parse() {
 	char *b64_buffer = NULL;
 	char *pem_temp_client = "pub_temp_client.pem";
-	char fname[_MAX_PATH];
+	char fname[PATH_MAX];
 
 	b64_buffer = sub_value_extract((const char *)message_buffer, begin_public, end_public);
 	if (b64_buffer) {
@@ -129,13 +144,13 @@ void client_public_key_parse() {
 
 void license_message_parse() {
 	char *b64_buffer = NULL;
-	byte *enc_buffer = NULL;
+	unsigned char *enc_buffer = NULL;
 
 	b64_buffer = sub_value_extract_trim((const char *)message_buffer, begin_license, end_license);
 	if (!b64_buffer)
 		program_exit(5);
 
-	int len = base64_decode((byte *)b64_buffer, &enc_buffer);
+	int len = base64_decode((unsigned char *)b64_buffer, &enc_buffer);
 	if (len) {
 		len = decrypt(enc_buffer, len, &license_buffer, session_key);
 		if (len)
@@ -163,9 +178,9 @@ void license_message_parse() {
 }
 
 void sha1_license_buffer() {
-	byte *sha1_buffer = NULL;
-	byte *b64_provider_enc_buffer = NULL;
-	byte half_buffer[512];
+	unsigned char *sha1_buffer = NULL;
+	unsigned char *b64_provider_enc_buffer = NULL;
+	unsigned char half_buffer[512];
 
 	if (!sha1(license_buffer_ex, strlen((char *)license_buffer_ex), &sha1_buffer))
 		program_exit(7);
@@ -207,7 +222,7 @@ void sha1_license_buffer() {
 }
 
 void client_license_write() {
-	char fname[_MAX_PATH];
+	char fname[PATH_MAX];
 
 	FILE *fd = fopen(fullname("client.license", fname), "w");
 
@@ -238,15 +253,15 @@ void newline_trim(char *p) {
 
 void client_license_test() {
 
-	char fname[_MAX_PATH];
+	char fname[PATH_MAX];
 
 	FILE *fd = fopen(fullname("client.license", fname), "r");
 	if (fd) {
 
-		byte license[4096];
-		byte line[96];
-		byte sha1a[1024];
-		byte sha1b[1024];
+		unsigned char license[4096];
+		unsigned char line[96];
+		unsigned char sha1a[1024];
+		unsigned char sha1b[1024];
 
 		memset(license, 0, 4096);
 		memset(sha1a, 0, 1024);
@@ -312,14 +327,14 @@ void client_license_test() {
 int main(int argc, char **argv)
 {
 
-        lib_initialize();
+        crypto_init();
 
         if (argc < 2) {
                 program_usage();
                 program_exit(0);
         }
 
-        memset(path_name, 0, _MAX_PATH);
+        memset(path_name, 0, PATH_MAX);
         strcpy(path_name, argv[1]);
 
         if (argc == 3) {

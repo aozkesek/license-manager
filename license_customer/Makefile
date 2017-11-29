@@ -3,8 +3,8 @@ INCDIRS := -I../../openssl/include/ -I../liblicense/
 LIBDIRS := -Wl,-L../../openssl/ -Wl,-L../liblicense/
 LIBS := -Wl,-llicense -Wl,-lcrypto
 
-license_public : license_public.c
-	$(CC) $(INCDIRS) $(LIBDIRS) $(LIBS) license_public.c -o license_public
+license_customer : license_customer.c
+	$(CC) $(INCDIRS) $(LIBDIRS) $(LIBS) license_customer.c -o license_customer
 
 clean :
-	rm -f license_public
+	rm -f license_customer *.pem *.lic
