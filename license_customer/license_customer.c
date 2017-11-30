@@ -1,183 +1,225 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+
 #include <sys/stat.h>
-#include <memory.h>
 #include <errno.h>
 
 #include <license.h>
 
-const char *pri_client = "pri_client.pem";
-const char *pub_client = "pub_client.pem";
-const char *pub_provider = "pub_provider.pem";
+#define ELICFILE 0x0001
+
+const char *prov_pri_pem = "provider.pem";
+const char *prov_pub_pem = "public_provider.pem";
+const char *cli_pri_pem = "customer.pem";
+const char *cli_pub_pem = "public_customer.pem";
+
 const char *client_lic = "client.lic";
 
 PLICENSE_STRUCT license = NULL;
 RSA *rsa_client = NULL;
 RSA *rsa_provider = NULL;
 FILE *fd_license = NULL;
-byte *session_key = NULL;
-char path_name[_MAX_PATH];
+unsigned char *session_key = NULL;
 
-char *fullname(const char *name, char *fullname) {
+void client_private_key_load() {
+        rsa_client = rsa_privatekey_load_from_file(cli_pri_pem);
+        publickey_write_to_file(cli_pub_pem, rsa_client);
+}
 
-	sprintf(fullname, "%s/%s", path_name, name);
-	return  fullname;
+void provider_public_key_load() {
+        rsa_provider = rsa_publickey_read_from_file(prov_pub_pem);
+}
 
+void license_init(int argc, const char **argv) {
+        
+        license = malloc(sizeof(LICENSE_STRUCT));
+
+        strcpy(license->acquirer, argv[1]);
+        strcpy(license->issuer, argv[2]);
+        strcpy(license->version, argv[3]);
+        license->service_size = argc - 4;
+        license->services = malloc(sizeof(SERVICE_STRUCT) * argc - 4);
+
+        memset(license->services, 0, sizeof(SERVICE_STRUCT) * argc - 4);
+
+        char *p = NULL;
+        for (int i = 4; i < argc; i++) {
+                p = strstr(argv[i], ":");
+                if (p) {  
+                        strncpy(license->services[i - 4].name, argv[i], 
+                                p - argv[i]);
+                        strcpy(license->services[i - 4].version, p + 1);
+                } else {
+                        strcpy(license->services[i - 4].name, argv[i]);
+                        strcpy(license->services[i - 4].version, "DEMO");
+                }
+        }
+
+}
+
+void license_free() {
+        if (license) return;
+        if (license->services) free(license->services);
+        free(license);        
 }
 
 void program_exit(int exit_code) {
 
-	if (!rsa_provider) RSA_free(rsa_provider);
-	if (!rsa_client) RSA_free(rsa_client);
+        if (!rsa_provider) RSA_free(rsa_provider);
+        if (!rsa_client) RSA_free(rsa_client);
 
-	if (session_key) free(session_key);
-	if (fd_license) fclose(fd_license);
-	if (license) free(license);
+        if (session_key) free(session_key);
+        if (fd_license) fclose(fd_license);
+        
+        license_free();
+        crypto_final();
 
-	lib_finalize();
+        printf("program terminated with code (%d).\n", exit_code);
 
-	printf("program terminated with code (%d).\n", exit_code);
-
-	exit(exit_code);
+        exit(exit_code);
 }
+ 
+int license_size() {
+        int len = 0;
 
-void client_private_key_load() {
-	char fname[_MAX_PATH];
+        char *license_json = 
+                "{'Version':'','LicensedTo':'','IssuedBy':'','Services':[]}";
+        char *license_services_json = "{'Name':'','Version':''},";
 
-	rsa_client = rsa_privatekey_load_from_file(fullname(pri_client, fname));
-	if (!rsa_client) {
-		print_last_error();
-		program_exit(1);
-	}
-	publickey_write_to_file(fullname(pub_client, fname), rsa_client);
+        len += strlen(license->issuer);
+        len += strlen(license->acquirer);
+        len += strlen(license->version);
+
+        len += 2; //plicense->Service_Count
+
+        int i = 0;
+        for(; i < license->service_size; i++) {
+                len += strlen(license->services[i].name);
+                len += strlen(license->services[i].version);
+        }
+
+        return len + strlen(license_json) + 
+                license->service_size * strlen(license_services_json);
 }
+ 
+void license_to_json_string(char **slicense) {
 
-void provider_public_key_load() {
-	char fname[_MAX_PATH];
+        int slen = license_size();
+        reallocate((unsigned char **)slicense, slen);
+        
+        sprintf(*slicense,
+                "{\"Version\":\"%s\",\"LicensedTo\":\"%s\",\"IssuedBy\":\"%s\",\"Services\":["
+                , license->version
+                , license->acquirer
+                , license->issuer
+                );
 
-	rsa_provider = rsa_publickey_read_from_file(fullname(pub_provider, fname));
-	if (!rsa_provider) {
-		print_last_error();
-		program_exit(2);
-	}
+        int i, pos = strlen(*slicense);
 
-}
+        for (i = 0; i < license->service_size; i++) {
+                sprintf(*slicense + pos
+                        , "{\"Name\":\"%s\",\"Version\":\"%s\"}"
+                        , license->services[i].name
+                        , license->services[i].version);
+                pos = strlen(*slicense) ;
+                if (i < license->service_size - 1)
+                        sprintf(*slicense + pos++, ",");
+        }
 
-void session_key_create() {
-
-	generate_random_key(&session_key, 16);
-	if (!session_key)
-		program_exit(40);
-
-	int size = RSA_size(rsa_provider);
-	byte *enc_session_key = malloc(size);
-
-	memset(enc_session_key, 0, size);
-
-	int elen = public_encrypt_buffer(strlen((char *)session_key), session_key, enc_session_key, rsa_provider);
-	if (!elen) {
-		free(enc_session_key);
-		program_exit(41);
-	}
-
-	byte *b64_session_key = NULL;
-	base64_encode(enc_session_key, elen, &b64_session_key);
-	if (!b64_session_key) {
-		free(enc_session_key);
-		program_exit(42);
-	}
-
-	free(enc_session_key);
-
-	fputs("---BEGIN SESSION KEY---\n", fd_license);
-	base64_write_to_file(b64_session_key, fd_license);
-	fputs("---END SESSION KEY---\n", fd_license);
-
-	free(b64_session_key);
+        pos = strlen(*slicense);
+        sprintf(*slicense + pos, "]}");
 
 }
+ 
+void license_print() {
+        char *buffer = NULL;
+        license_to_json_string(&buffer);
+        printf("\n%s\n", buffer);
+        free(buffer);
+}
 
-void client_public_key_add() {
-	char fname[_MAX_PATH];
+void session_key_put_into_license() {
 
-	byte *public_client = load_from_file(fullname(pub_client, fname));
-	if (!public_client)
-		program_exit(5);
+        generate_random_key(16, &session_key);
 
-	fputs((const char *)public_client, fd_license);
-	free(public_client);
+        int size = RSA_size(rsa_provider);
+        unsigned char *enc_session_key = malloc(size);
 
+        memset(enc_session_key, 0, size);
+
+        public_encrypt_base64_buffer(strlen((char *)session_key), 
+                                session_key, &enc_session_key, rsa_provider);
+
+        fputs("---BEGIN SESSION KEY---\n", fd_license);
+        fputs((const char *)enc_session_key, fd_license);
+        fputs("---END SESSION KEY---\n", fd_license);
+
+        free(enc_session_key);
+
+}
+
+void client_public_key_put_into_license() {
+        unsigned char *public_client = NULL;
+        load_from_file(cli_pub_pem, &public_client);
+        fputs((const char *)public_client, fd_license);
+        free(public_client);
 }
 
 void client_license_info_add() {
 
-	byte *clr_license = NULL;
-	license_to_json_string(license, (char **)&clr_license);
-	if (!clr_license)
-		program_exit(61);
+        unsigned char *clr_license = NULL;
+        license_to_json_string((char **)&clr_license);
 
-	byte *enc_license = NULL;
-	int elen = encrypt(clr_license, strlen((char *)clr_license), &enc_license, session_key);
-	if (!elen || !enc_license) {
-		free(clr_license);
-		program_exit(62);
-	}
+        unsigned char *enc_license = NULL;
+        int elen = encrypt(clr_license, strlen((char *)clr_license), 
+                                &enc_license, session_key);
+        
+        free(clr_license);
 
-	free(clr_license);
+        unsigned char *b64_license = NULL;
+        base64_encode(enc_license, elen, &b64_license);
+        if (!b64_license) {
+        free(enc_license);
+        program_exit(63);
+        }
 
-	byte *b64_license = NULL;
-	base64_encode(enc_license, elen, &b64_license);
-	if (!b64_license) {
-		free(enc_license);
-		program_exit(63);
-	}
+        free(enc_license);
 
-	free(enc_license);
+        fputs("---BEGIN LICENSE---\n", fd_license);
+        base64_write_to_file(b64_license, fd_license);
+        fputs("---END LICENSE---\n", fd_license);
 
-	fputs("---BEGIN LICENSE---\n", fd_license);
-	base64_write_to_file(b64_license, fd_license);
-	fputs("---END LICENSE---\n", fd_license);
-
-	free(b64_license);
+        free(b64_license);
 }
 
 void program_usage() {
 
-	printf("usage:\nlicense_public.exe <full_path_name_of_the_pem_files> " \
-                "<version_of_the_app> <service_name:service_version [service_name_2:service_version2 ... ]>\n");
+        printf("usage:\nlicense_public.exe <acquirer> <issuer> " \
+                "<appication_version> <service_name:service_version " \
+                "[service_name_2:service_version2 ... ]>\n");
 
-	program_exit(-1);
+        program_exit(-1);
 
 }
 
 int main(int argc, const char **argv)
 {
-	char fname[_MAX_PATH];
+	crypto_init();
 
-	lib_initialize();
-
-	if (argc < 3)
+	if (argc < 4)
 		program_usage();
-
-	memset(path_name, 0, _MAX_PATH);
-	strcpy(path_name, argv[1]);
 
 	client_private_key_load();
 
 	provider_public_key_load();
 
-	fd_license = fopen(fullname(client_lic, fname), "w");
+	fd_license = fopen(client_lic, "w");
 	if (!fd_license)
-		program_exit(3);
+		exit_on_error(-ELICFILE);
 
-	session_key_create();
+	session_key_put_into_license();
 
-	client_public_key_add();
+	client_public_key_put_into_license();
 
-	license = license_init(argc, argv);
-	if (!license)
-		program_exit(6);
+	license_init(argc, argv);
 
 	client_license_info_add();
 

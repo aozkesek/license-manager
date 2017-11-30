@@ -41,6 +41,32 @@ unsigned char *sha256(const unsigned char *source, const int slen,
 	return base64_encode(sha_buffer, md_len, target);
 }
 
+int load_from_file(const char *fname, unsigned char **buffer) {
+ 
+        if (!buffer)
+                exit_on_error(-ERDFILE);
+                
+        FILE *file = fopen(fname, "r");
+        if (!file)
+                exit_on_error(-ERDFILE);
+ 
+        if (fseek(file, 0, SEEK_END)) {
+                fclose(file);
+                exit_on_error(-ERDFILE);
+        }
+
+        int flen = ftell(file);
+        rewind(file);
+
+        reallocate(buffer, flen + 1); 
+        fread(buffer, flen, 1, file); 
+        fclose(file);
+ 
+        buffer[flen] = 0;
+ 
+        return flen;
+}
+
 void license_sha_initialize(PLICENSE_SHA_STRUCT plsha) {
 
 	if (!plsha)

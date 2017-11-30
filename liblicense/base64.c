@@ -29,7 +29,7 @@ int b64toi(const unsigned char c) {
 
 }
 
-unsigned char *generate_random_key(unsigned char **random_key, int klen) {
+void generate_random_key(int klen, unsigned char **random_key) {
 
 	if (!random_key)
 	        exit_on_error(EB64FAIL);
@@ -47,7 +47,6 @@ unsigned char *generate_random_key(unsigned char **random_key, int klen) {
 	for (i = 0; i < klen; i++)
 		(*random_key)[i] = b64[rand() % 64];
 
-	return *random_key;
 }
 
 int base64_decode(const unsigned char *source, unsigned char **target) {

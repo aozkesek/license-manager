@@ -41,6 +41,9 @@
 #define ELICUPDT -0x1103
 #define ELICFINL -0x1104
 
+#define ERDFILE -0x2001
+#define EWRFILE -0x2002
+
 #define exit_on_error(e) \
         exit_on_error_m(__FILE__, __FUNCTION__, __LINE__, e)
 
@@ -82,6 +85,8 @@ RSA *rsa_publickey_read_from_file(const char *fname);
 RSA *rsa_publickey_load_from_file(const char *fname);
 RSA *rsa_privatekey_read_from_file(const char *fname);
 RSA *rsa_privatekey_load_from_file(const char *fname);
+
+void generate_random_key(int klen, unsigned char **random_key);
 
 int base64_decode(const unsigned char *source, unsigned char **target);
 unsigned char *base64_encode(const unsigned char *source, const int slen, 
