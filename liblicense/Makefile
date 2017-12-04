@@ -1,7 +1,7 @@
-CC := clang -c -O2
-AR := ar -ru
-CCINCDIRS := -I ../../openssl/include/
-OBJS := license.o base64.o crypto.o rsa.o pem.o
+CC := gcc -c -O2
+AR := ar rcus
+CCINCDIRS := -I ../../openssl/dist/include/
+OBJS := base64.o crypto.o license.o pem.o rsa.o 
 
 liblicense.a : $(OBJS)
 	$(AR) $@ $(OBJS)

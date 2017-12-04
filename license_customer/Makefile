@@ -1,10 +1,10 @@
-CC := clang -O2
-INCDIRS := -I../../openssl/include/ -I../liblicense/
-LIBDIRS := -Wl,-L../../openssl/ -Wl,-L../liblicense/
-LIBS := -Wl,-llicense -Wl,-lcrypto
+CC := gcc -O2
+INCDIRS := -I../../openssl/dist/include/ -I../liblicense/
+LIBDIRS := -L../../openssl/dist/lib/ -L../liblicense/
+LIBS := -llicense -lcrypto
 
 license_customer : license_customer.c
-	$(CC) $(INCDIRS) $(LIBDIRS) $(LIBS) license_customer.c -o license_customer
+	$(CC) -o license_customer $(INCDIRS) license_customer.c $(LIBDIRS) $(LIBS)  
 
 clean :
 	rm -f license_customer *.pem *.lic

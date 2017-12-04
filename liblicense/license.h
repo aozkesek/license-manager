@@ -31,5 +31,7 @@ typedef struct _LICENSE_STRUCT {
 unsigned char *sha256(const unsigned char *source, const int slen, 
                         unsigned char **target);
 int load_from_file(const char *fname, unsigned char **buffer);
-                               
+void license_sha(unsigned char *source, unsigned char *sha_a, 
+                unsigned char *sha_b);
+                         
 #endif //_LICENSE_H
