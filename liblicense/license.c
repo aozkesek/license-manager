@@ -135,11 +135,11 @@ void license_sha(unsigned char *source, unsigned char *sha_a,
 	
 	license_sha_decrypt(&lsha, sha_a, sha_b);
         
-	if (memcmp(lsha.source_sha, lsha.sha, EVP_MAX_MD_SIZE) != 0) {
-		license_sha_finalize(&lsha);
-		exit_on_error(ESHAFAIL);
-	}
-
+ 	int result = strcmp(lsha.source_sha, lsha.sha);
+         
 	license_sha_finalize(&lsha);
+
+	if (result != 0)
+                exit_on_error(ESHAFAIL);
 
 }

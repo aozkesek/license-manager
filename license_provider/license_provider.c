@@ -1,15 +1,17 @@
 
 #include <license.h>
 
-#define EEXTRAC 0x0002
-
+#define EEXTRAC 0x0001
+#define ELICOFL 0x0002
+#define EPEMOFL 0x0003
+#define ELICTST 0x0101
 
 //global variables
 const char *prov_pri_pem = "provider.pem";
 const char *prov_pub_pem = "public_provider.pem";
 const char *client_lic = "client.lic";
-char *cli_pri_pem = NULL;
-char *cli_pub_pem = NULL;
+const char *cli_pri_pem = "customer.pem";
+const char *cli_pub_pem = "public_customer.pem";
 
 const char *begin_session = "---BEGIN SESSION KEY---";
 const char *end_session = "---END SESSION KEY---";
@@ -37,7 +39,7 @@ char license_day[10];
 
 void program_usage() {
 	printf("usage:\nlicense_manager [test | day_count]\n");
-	exit(1);
+	program_exit(1);
 }
 
 void program_exit(int exit_code) {
@@ -121,26 +123,15 @@ char *sub_value_extract(const char *lic_client,
 
 void session_key_parse() {
 	unsigned char *base64_buffer = NULL;
-	unsigned char *enc_buffer = NULL;
 	int len;
 
 	base64_buffer = sub_value_extract_trim((const char *)message_buffer, 
                                         begin_session, end_session);
-	if (base64_buffer) {
-		len = base64_decode(base64_buffer, &enc_buffer);
-		if (len) {
-			session_key = malloc(len);
-			len = private_decrypt_base64_buffer(enc_buffer, 
-                                                &session_key, rsa_provider);
-			if (len)
-				session_key[len] = 0;
-			free(enc_buffer);
-		}
-		free(base64_buffer);
-	}
-
-	if (!session_key)
-		program_exit(3);
+	
+	len = private_decrypt_base64_buffer(base64_buffer, &session_key, 
+						rsa_provider);
+	session_key[len] = 0;
+	free(base64_buffer);
 
 }
 
@@ -150,55 +141,46 @@ void client_public_key_parse() {
 	
         base64_buffer = sub_value_extract((const char *)message_buffer, 
                                         begin_public, end_public);
-        if (base64_buffer) {
-                FILE *fd = fopen(pem_temp_client, "w");
-                if (fd) {
-			fputs(begin_public, fd);
-			fputs(base64_buffer, fd);
-			fputs(end_public, fd);
-			fputs("\n", fd);
-			fclose(fd);
-			rsa_client = rsa_publickey_load_from_file(pem_temp_client);
-		}
-		free(base64_buffer);
-	}
-
-	if (!rsa_client)
-		program_exit(4);
-
+	FILE *fd = fopen(pem_temp_client, "w");
+	if (!fd) 
+		exit_on_error(-EPEMOFL);
+	
+	fputs(begin_public, fd);
+	fputs(base64_buffer, fd);
+	fputs(end_public, fd);
+	fputs("\n", fd);
+	fclose(fd);
+	rsa_client = rsa_publickey_load_from_file(pem_temp_client);
+	
+	free(base64_buffer);
+	
 }
 
 void license_message_parse() {
 	char *b64_buffer = NULL;
 	unsigned char *enc_buffer = NULL;
 
-	b64_buffer = sub_value_extract_trim((const char *)message_buffer, begin_license, end_license);
-	if (!b64_buffer)
-		program_exit(5);
+	b64_buffer = sub_value_extract_trim((const char *)message_buffer, 
+					begin_license, end_license);
 
 	int len = base64_decode((unsigned char *)b64_buffer, &enc_buffer);
-	if (len) {
-		len = decrypt(enc_buffer, len, &license_buffer, session_key);
-		if (len)
-			license_buffer[len] = 0;
-		free(enc_buffer);
-	}
+	len = decrypt(enc_buffer, len, &license_buffer, session_key);
+	license_buffer[len] = 0;
+	free(enc_buffer);
 	free(b64_buffer);
-
-	if (!license_buffer)
-		program_exit(5);
 
 	char lbuffer[4096];
 
 	if (strlen(license_day) > 0)
-		sprintf(lbuffer, "{\"Type\":\"DEMO\",\"ValidFor\":%s,%s", license_day, &license_buffer[1]);
+		sprintf(lbuffer, "{\"Type\":\"DEMO\",\"ValidFor\":%s,%s", 
+			license_day, &license_buffer[1]);
 	else
-		sprintf(lbuffer, "{\"Type\":\"LIFETIME\",%s", &license_buffer[1]);
+		sprintf(lbuffer, "{\"Type\":\"LIFETIME\",%s", 
+			&license_buffer[1]);
 
 	len = strlen(lbuffer);
 
-	license_buffer_ex = malloc(len + 1);
-	memset(license_buffer_ex, 0, len + 1);
+	reallocate(&license_buffer_ex, len + 1);
 	strcpy((char *)license_buffer_ex, lbuffer);
 
 }
@@ -214,12 +196,7 @@ void sha_license_buffer() {
 	int elen = private_encrypt_base64_buffer(
                         strlen((char *)sha_buffer), sha_buffer, 
                         &base64_provider_enc_buffer, rsa_provider);
-	if (elen < 1) {
-		print_last_error();
-		free(sha_buffer);
-		program_exit(7);
-	}
-
+	
 	free(sha_buffer);
 
 	int slen = strlen((char *)base64_provider_enc_buffer);
@@ -230,12 +207,7 @@ void sha_license_buffer() {
 
 	elen = public_encrypt_base64_buffer(strlen((char *)half_buffer), 
                                 half_buffer, &license_sha_a, rsa_client);
-	if (elen < 1) {
-		print_last_error();
-		free(base64_provider_enc_buffer);
-		program_exit(7);
-	}
-
+	
 	memset(half_buffer, 0, 512);
 	memcpy(half_buffer, base64_provider_enc_buffer + blen, slen - blen);
 
@@ -244,34 +216,29 @@ void sha_license_buffer() {
 
 	free(base64_provider_enc_buffer);
 
-	if (elen < 1) {
-		print_last_error();
-		program_exit(7);
-	}
-
 }
 
 void client_license_write() {
 
 	FILE *fd = fopen("client.license", "w");
 
-	if (fd) {
-		fputs((const char *)license_buffer_ex, fd);
-		fputs("\n", fd);
-		fputs(begin_license_sha_a, fd);
-		fputs("\n", fd);
-		base64_write_to_file(license_sha_a, fd);
-		fputs(end_license_sha_a, fd);
-		fputs("\n", fd);
-		fputs(begin_license_sha_b, fd);
-		fputs("\n", fd);
-		base64_write_to_file(license_sha_b, fd);
-		fputs(end_license_sha_b, fd);
-		fputs("\n", fd);
+	if (!fd) 
+		exit_on_error(-ELICOFL);
+	
+	fputs((const char *)license_buffer_ex, fd);
+	fputs("\n", fd);
+	fputs(begin_license_sha_a, fd);
+	fputs("\n", fd);
+	base64_write_to_file(license_sha_a, fd);
+	fputs(end_license_sha_a, fd);
+	fputs("\n", fd);
+	fputs(begin_license_sha_b, fd);
+	fputs("\n", fd);
+	base64_write_to_file(license_sha_b, fd);
+	fputs(end_license_sha_b, fd);
+	fputs("\n", fd);
 
-		fclose(fd);
-	}
-
+	fclose(fd);
 }
 
 void newline_trim(char *p) {
@@ -283,71 +250,67 @@ void newline_trim(char *p) {
 void client_license_test() {
 
 	FILE *fd = fopen("client.license", "r");
-	if (fd) {
+	if (!fd)
+		exit_on_error(-ELICTST);
 
-		unsigned char license[4096];
-		unsigned char line[96];
-		unsigned char sha_a[1024];
-		unsigned char sha_b[1024];
+	unsigned char license[4096];
+	unsigned char line[96];
+	unsigned char sha_a[1024];
+	unsigned char sha_b[1024];
 
-		memset(license, 0, 4096);
-		memset(sha_a, 0, 1024);
-		memset(sha_b, 0, 1024);
+	memset(license, 0, 4096);
+	memset(sha_a, 0, 1024);
+	memset(sha_b, 0, 1024);
 
-		if (fgets((char *)license, 4096, fd)) {
+	fgets((char *)license, 4096, fd);
+	
+	newline_trim((char *)license);
 
-			newline_trim((char *)license);
+	short isSha_a = 0;
+	short isSha_b = 0;
+	short bsha_alen = strlen(begin_license_sha_a);
+	short bsha_blen = strlen(begin_license_sha_b);
+	short esha_alen = strlen(end_license_sha_a);
+	short esha_blen = strlen(end_license_sha_b);
 
-			short isSha_a = 0;
-			short isSha_b = 0;
-			short bsha_alen = strlen(begin_license_sha_a);
-			short bsha_blen = strlen(begin_license_sha_b);
-			short esha_alen = strlen(end_license_sha_a);
-			short esha_blen = strlen(end_license_sha_b);
+	while (!feof(fd) && fgets((char *)line, 96, fd)) {
 
-			while (!feof(fd) && fgets((char *)line, 96, fd)) {
-
-				if (!memcmp(line, begin_license_sha_a, bsha_alen)) {
-					isSha_a = 1;
-					isSha_b = 0;
-					continue;
-				}
-				else if (!memcmp(line, begin_license_sha_b, bsha_blen)) {
-					isSha_a = 0;
-					isSha_b = 1;
-					continue;
-				}
-				else if (!memcmp(line, end_license_sha_a, esha_alen)) {
-					isSha_a = 0;
-					isSha_b = 0;
-					continue;
-				}
-				else if (!memcmp(line, end_license_sha_b, esha_blen)) {
-					isSha_a = 0;
-					isSha_b = 0;
-					continue;
-				}
-
-				newline_trim((char *)line);
-
-				if (isSha_a)
-					strcat((char *)sha_a, (const char *)line);
-				else if (isSha_b)
-					strcat((char *)sha_b, (const char *)line);
-
-			}
-
+		if (!memcmp(line, begin_license_sha_a, bsha_alen)) {
+			isSha_a = 1;
+			isSha_b = 0;
+			continue;
+		}
+		else if (!memcmp(line, begin_license_sha_b, bsha_blen)) {
+			isSha_a = 0;
+			isSha_b = 1;
+			continue;
+		}
+		else if (!memcmp(line, end_license_sha_a, esha_alen)) {
+			isSha_a = 0;
+			isSha_b = 0;
+			continue;
+		}
+		else if (!memcmp(line, end_license_sha_b, esha_blen)) {
+			isSha_a = 0;
+			isSha_b = 0;
+			continue;
 		}
 
-		fclose(fd);
+		newline_trim((char *)line);
 
-		license_sha(license, sha_a, sha_b);
-		printf("TEST => OK\n");
+		if (isSha_a)
+			strcat((char *)sha_a, (const char *)line);
+		else if (isSha_b)
+			strcat((char *)sha_b, (const char *)line);
 
 	}
 
+	fclose(fd);
 
+	license_sha(license, sha_a, sha_b);
+	printf("OK, licence is tested.\n");
 
+	program_exit(0);
 
 }
 
@@ -357,32 +320,36 @@ int main(int argc, char **argv)
         crypto_init();
 
         if (argc == 2) {
-                if (!memcmp("test", argv[1], 4)) {
-                	        client_license_test();
-                	        program_exit(0);
-                }
+                if (!memcmp("test", argv[1], 4))
+                	client_license_test();
 
                 int test_day = atoi(argv[1]);
-                if ( test_day <= 0 || test_day > 90 ) {
+                if ( test_day <= 0 || test_day > 90 )
                         program_usage();
-                        program_exit(0);
-                }
+
                 snprintf(license_day, 10, "%d", test_day);
         }
 
         provider_private_key_load();
+	printf("provider's key is loaded.\n");
 
         load_message_from_client();
+	printf("customer's license is loaded.\n");
 
         session_key_parse();
+	printf("sessionkey is parsed.\n");
 
         client_public_key_parse();
+	printf("customer's public key is parsed.\n");
 
         license_message_parse();
+	printf("customer's license is parsed.\n");
 
         sha_license_buffer();
+	printf("customer's license is generated.\n");
 
         client_license_write();
+	printf("customer's license is saved into the file.\n");
 
         client_license_test();
 
