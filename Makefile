@@ -1,4 +1,4 @@
-SUBDIRS := liblicense license_provider license_customer
+SUBDIRS := liblicense license_customer license_provider
 
 .PHONY: all cleanall $(SUBDIRS)
 

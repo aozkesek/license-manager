@@ -12,8 +12,8 @@ int public_encrypt_base64_buffer(int slen, unsigned char *source,
 	if (!source || !target || slen >= enc_size - 11)
 		exit_on_error(ERSAFAIL);
 
-	unsigned char *enc_buffer = malloc(enc_size);
-	memset(enc_buffer, 0, enc_size);
+	unsigned char *enc_buffer = NULL;
+	reallocate(&enc_buffer, enc_size);
 
 	int elen;
 	elen = RSA_CRYPT(public, encrypt, slen, source, enc_buffer, rsa);

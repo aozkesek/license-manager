@@ -56,15 +56,17 @@ void license_init(int argc, const char **argv) {
 }
 
 void license_free() {
-        if (license) return;
+        if (!license) return;
         if (license->services) free(license->services);
         free(license);        
 }
 
 void program_exit(int exit_code) {
 
-        if (!rsa_provider) RSA_free(rsa_provider);
-        if (!rsa_client) RSA_free(rsa_client);
+        printf("program will be terminated with code (%d).\n", exit_code);
+
+        if (rsa_provider) RSA_free(rsa_provider);
+        if (rsa_client) RSA_free(rsa_client);
 
         if (session_key) free(session_key);
         if (fd_license) fclose(fd_license);
@@ -138,28 +140,24 @@ void license_print() {
 
 void session_key_put_into_license() {
 
+        unsigned char *enc_session_key = NULL;
+
         generate_random_key(16, &session_key);
-
-        int size = RSA_size(rsa_provider);
-        unsigned char *enc_session_key = malloc(size);
-
-        memset(enc_session_key, 0, size);
-
         public_encrypt_base64_buffer(strlen((char *)session_key), 
                                 session_key, &enc_session_key, rsa_provider);
 
         fputs("---BEGIN SESSION KEY---\n", fd_license);
-        fputs((const char *)enc_session_key, fd_license);
+        base64_write_to_file(enc_session_key, fd_license);
         fputs("---END SESSION KEY---\n", fd_license);
 
         free(enc_session_key);
-
 }
 
 void client_public_key_put_into_license() {
         unsigned char *public_client = NULL;
+
         load_from_file(cli_pub_pem, &public_client);
-        fputs((const char *)public_client, fd_license);
+        fputs((const char *)public_client, fd_license);        
         free(public_client);
 }
 
@@ -176,10 +174,6 @@ void client_license_info_add() {
 
         unsigned char *b64_license = NULL;
         base64_encode(enc_license, elen, &b64_license);
-        if (!b64_license) {
-        free(enc_license);
-        program_exit(63);
-        }
 
         free(enc_license);
 
@@ -196,7 +190,7 @@ void program_usage() {
                 "<appication_version> <service_name:service_version " \
                 "[service_name_2:service_version2 ... ]>\n");
 
-        program_exit(-1);
+        program_exit(-11);
 
 }
 
@@ -208,20 +202,27 @@ int main(int argc, const char **argv)
 		program_usage();
 
 	client_private_key_load();
+        printf("customer key is loaded.\n");
 
 	provider_public_key_load();
+        printf("provider's public key is loaded.\n");
 
 	fd_license = fopen(client_lic, "w");
 	if (!fd_license)
 		exit_on_error(-ELICFILE);
+        printf("customer license file is opened.\n");
 
 	session_key_put_into_license();
+        printf("encrypted session key is saved into the license file.\n");
 
 	client_public_key_put_into_license();
+        printf("customer public key is saved into the license file.\n");
 
 	license_init(argc, argv);
+        printf("license is initialized.\n");
 
 	client_license_info_add();
+        printf("license is saved into the license file.\n");
 
 	program_exit(0);
 }

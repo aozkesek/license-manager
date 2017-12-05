@@ -59,10 +59,10 @@ int load_from_file(const char *fname, unsigned char **buffer) {
         rewind(file);
 
         reallocate(buffer, flen + 1); 
-        fread(buffer, flen, 1, file); 
+        fread(*buffer, flen, 1, file); 
         fclose(file);
  
-        buffer[flen] = 0;
+        (*buffer)[flen] = 0;
  
         return flen;
 }

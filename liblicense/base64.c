@@ -37,7 +37,7 @@ void generate_random_key(int klen, unsigned char **random_key) {
 	if (klen < 16)
 		klen = 16;
 
-	if (!*random_key)
+	if (*random_key)
 		free(*random_key);
 
 	*random_key = malloc(klen + 1);
