@@ -15,8 +15,8 @@ const char *cli_pub_pem = "public_customer.pem";
 
 const char *begin_session = "---BEGIN SESSION KEY---";
 const char *end_session = "---END SESSION KEY---";
-const char *begin_public = "-----BEGIN RSA PUBLIC KEY-----";
-const char *end_public = "-----END RSA PUBLIC KEY-----";
+const char *begin_key = "---BEGIN RSA PRIVATE KEY---";
+const char *end_key = "---END RSA PRIVATE KEY---";
 const char *begin_license = "---BEGIN LICENSE---";
 const char *end_license = "---END LICENSE---";
 const char *begin_license_sha_a = "---BEGIN SHA1 A---";
@@ -130,28 +130,30 @@ void session_key_parse() {
 	
 	len = private_decrypt_base64_buffer(base64_buffer, &session_key, 
 						rsa_provider);
-	session_key[len] = 0;
+
 	free(base64_buffer);
 
 }
 
-void client_public_key_parse() {
+void client_key_parse() {
         char *base64_buffer = NULL;
-        char *pem_temp_client = "pub_temp_client.pem";
+        char *pem_temp_client = "temp_customer.pem";
 	
-        base64_buffer = sub_value_extract((const char *)message_buffer, 
-                                        begin_public, end_public);
+        base64_buffer = sub_value_extract_trim((const char *)message_buffer, 
+                                        	begin_key, end_key);
+	
+	unsigned char *client_enc_key = NULL;
+	int len = base64_decode(base64_buffer, &client_enc_key);
+	unsigned char *client_key = NULL;
+	len = decrypt(client_enc_key, len, &client_key, session_key);
+
 	FILE *fd = fopen(pem_temp_client, "w");
 	if (!fd) 
 		exit_on_error(-EPEMOFL);
-	
-	fputs(begin_public, fd);
-	fputs(base64_buffer, fd);
-	fputs(end_public, fd);
-	fputs("\n", fd);
+	fputs(client_key, fd);	
 	fclose(fd);
-	rsa_client = rsa_publickey_load_from_file(pem_temp_client);
-	
+	rsa_client = rsa_privatekey_load_from_file(pem_temp_client);
+	remove(pem_temp_client);
 	free(base64_buffer);
 	
 }
@@ -339,8 +341,8 @@ int main(int argc, char **argv)
         session_key_parse();
 	printf("sessionkey is parsed.\n");
 
-        client_public_key_parse();
-	printf("customer's public key is parsed.\n");
+        client_key_parse();
+	printf("customer's key is parsed.\n");
 
         license_message_parse();
 	printf("customer's license is parsed.\n");

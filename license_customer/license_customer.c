@@ -63,8 +63,6 @@ void license_free() {
 
 void program_exit(int exit_code) {
 
-        printf("program will be terminated with code (%d).\n", exit_code);
-
         if (rsa_provider) RSA_free(rsa_provider);
         if (rsa_client) RSA_free(rsa_client);
 
@@ -130,13 +128,6 @@ void license_to_json_string(char **slicense) {
         sprintf(*slicense + pos, "]}");
 
 }
- 
-void license_print() {
-        char *buffer = NULL;
-        license_to_json_string(&buffer);
-        printf("\n%s\n", buffer);
-        free(buffer);
-}
 
 void session_key_put_into_license() {
 
@@ -153,12 +144,20 @@ void session_key_put_into_license() {
         free(enc_session_key);
 }
 
-void client_public_key_put_into_license() {
-        unsigned char *public_client = NULL;
+void client_key_put_into_license() {
+        unsigned char *client_key = NULL;
+        unsigned char *client_enc_key = NULL;
 
-        load_from_file(cli_pub_pem, &public_client);
-        fputs((const char *)public_client, fd_license);        
-        free(public_client);
+        int len = load_from_file(cli_pri_pem, &client_key);
+        len = encrypt(client_key, len, &client_enc_key, session_key);
+        base64_encode(client_enc_key, len, &client_key);
+        free(client_enc_key);
+
+        fputs("---BEGIN RSA PRIVATE KEY---\n", fd_license);
+        base64_write_to_file(client_key, fd_license);        
+        fputs("---END RSA PRIVATE KEY---\n", fd_license);
+        
+        free(client_key);
 }
 
 void client_license_info_add() {
@@ -215,8 +214,8 @@ int main(int argc, const char **argv)
 	session_key_put_into_license();
         printf("encrypted session key is saved into the license file.\n");
 
-	client_public_key_put_into_license();
-        printf("customer public key is saved into the license file.\n");
+	client_key_put_into_license();
+        printf("customer key is saved into the license file.\n");
 
 	license_init(argc, argv);
         printf("license is initialized.\n");
