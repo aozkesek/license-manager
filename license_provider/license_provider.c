@@ -333,25 +333,25 @@ int main(int argc, char **argv)
         }
 
         provider_private_key_load();
-	printf("provider's key is loaded.\n");
+        printf("provider's key is loaded.\n");
 
         load_message_from_client();
-	printf("customer's license is loaded.\n");
+        printf("customer's license is loaded.\n");
 
         session_key_parse();
-	printf("sessionkey is parsed.\n");
+        printf("sessionkey is parsed.\n");
 
         client_key_parse();
-	printf("customer's key is parsed.\n");
+        printf("customer's key is parsed.\n");
 
         license_message_parse();
-	printf("customer's license is parsed.\n");
+        printf("customer's license is parsed.\n");
 
         sha_license_buffer();
-	printf("customer's license is generated.\n");
+        printf("customer's license is generated.\n");
 
         client_license_write();
-	printf("customer's license is saved into the file.\n");
+        printf("customer's license is saved into the file.\n");
 
         client_license_test();
 
