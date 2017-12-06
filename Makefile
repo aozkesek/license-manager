@@ -1,4 +1,7 @@
+include make.inc
+
 SUBDIRS := liblicense license_customer license_provider
+
 
 .PHONY: all cleanall $(SUBDIRS)
 
