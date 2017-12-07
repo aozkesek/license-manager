@@ -186,7 +186,7 @@ void client_license_info_add() {
 void program_usage() {
 
         printf("usage:\nlicense_public.exe <acquirer> <issuer> " \
-                "<appication_version> <service_name:service_version " \
+                "<application_version> <service_name:service_version " \
                 "[service_name_2:service_version2 ... ]>\n");
 
         program_exit(-11);
