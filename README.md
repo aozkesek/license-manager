@@ -1,6 +1,6 @@
 # License Manager 
 
-**A Simple Sotfware License Application**  
+**A Simple Software License Application**  
 License Manager has three -3- parts.  These are a static library liblicense, an acquirer executable license_customer and an issuerer executable license_provider.
 
 * **liblicense**
