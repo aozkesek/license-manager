@@ -33,5 +33,7 @@ unsigned char *sha256(const unsigned char *source, const int slen,
 int load_from_file(const char *fname, unsigned char **buffer);
 void license_sha(unsigned char *source, unsigned char *sha_a, 
                 unsigned char *sha_b);
-                         
+void license_for_app(const char *app_version);                         
+void license_for_service(const char *app_version, const char *svc_name, 
+                const char *svc_version);                         
 #endif //_LICENSE_H

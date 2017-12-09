@@ -1,9 +1,22 @@
 #include "license.h"
 
-extern const char *prov_pri_pem;
-extern const char *prov_pub_pem;
-extern const char *cli_pri_pem;
-extern const char *cli_pub_pem;
+const char *prov_pri_pem = "provider.pem";
+const char *prov_pub_pem = "public_provider.pem";
+const char *cli_pri_pem = "customer.pem";
+const char *cli_pub_pem = "public_customer.pem";
+const char *client_lic = "client.lic";
+const char *client_license = "client.license";
+
+const char *begin_session = "---BEGIN SESSION KEY---";
+const char *end_session = "---END SESSION KEY---";
+const char *begin_key = "---BEGIN RSA PRIVATE KEY---";
+const char *end_key = "---END RSA PRIVATE KEY---";
+const char *begin_license = "---BEGIN LICENSE---";
+const char *end_license = "---END LICENSE---";
+const char *begin_license_sha_a = "---BEGIN SHA1 A---";
+const char *end_license_sha_a = "---END SHA1 A---";
+const char *begin_license_sha_b = "---BEGIN SHA1 B---";
+const char *end_license_sha_b = "---END SHA1 B---";
 
 void exit_on_error_m(const char *filename, const char *function_name, 
                         int line_number, int error_code) {
@@ -120,7 +133,6 @@ void license_sha_decrypt(PLICENSE_SHA_STRUCT plsha, unsigned char *sha_a,
 
 }
 
-
 void license_sha(unsigned char *source, unsigned char *sha_a, 
                 unsigned char *sha_b) {
 
@@ -141,5 +153,41 @@ void license_sha(unsigned char *source, unsigned char *sha_a,
 
 	if (result != 0)
                 exit_on_error(ESHAFAIL);
+
+}
+
+void license_for_app(const char *app_version) {
+
+        if (!app_version)
+                exit_on_error(ELICFAIL);
+
+        unsigned char *client_licence_buffer = NULL;
+        char license[128];
+
+        load_from_file(client_license, &client_licence_buffer);
+        sprintf(license, ",\"Version\":\"%s\",", app_version);
+        if (!strstr(client_licence_buffer, license))
+                exit_on_error(ELICFAIL);
+
+}
+
+void license_for_service(const char *app_version, const char *svc_name, 
+                const char *svc_version) {
+
+        if (!app_version || !svc_name || !svc_version)
+                exit_on_error(ELICFAIL);
+
+        unsigned char *client_licence_buffer = NULL;
+        char license[128];
+
+        load_from_file(client_license, &client_licence_buffer);
+        sprintf(license, ",\"Version\":\"%s\",", app_version);
+        if (!strstr(client_licence_buffer, license))
+                exit_on_error(ELICFAIL);
+        sprintf(license, "{\"Name\":\"%s\",\"Version\":\"%s\"}", 
+                svc_name, svc_version);
+        if (!strstr(client_licence_buffer, license))
+                exit_on_error(ELICFAIL);
+        
 
 }

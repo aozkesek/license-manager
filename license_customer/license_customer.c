@@ -6,12 +6,11 @@
 
 #define ELICFILE 0x0001
 
-const char *prov_pri_pem = "provider.pem";
-const char *prov_pub_pem = "public_provider.pem";
-const char *cli_pri_pem = "customer.pem";
-const char *cli_pub_pem = "public_customer.pem";
-
-const char *client_lic = "client.lic";
+extern const char *prov_pri_pem;
+extern const char *prov_pub_pem;
+extern const char *cli_pri_pem;
+extern const char *cli_pub_pem;
+extern const char *client_lic;
 
 PLICENSE_STRUCT license = NULL;
 RSA *rsa_client = NULL;

@@ -7,22 +7,23 @@
 #define ELICTST 0x0101
 
 //global variables
-const char *prov_pri_pem = "provider.pem";
-const char *prov_pub_pem = "public_provider.pem";
-const char *client_lic = "client.lic";
-const char *cli_pri_pem = "customer.pem";
-const char *cli_pub_pem = "public_customer.pem";
+extern const char *prov_pri_pem;
+extern const char *prov_pub_pem;
+extern const char *client_lic;
+extern const char *client_license;
+extern const char *cli_pri_pem;
+extern const char *cli_pub_pem;
 
-const char *begin_session = "---BEGIN SESSION KEY---";
-const char *end_session = "---END SESSION KEY---";
-const char *begin_key = "---BEGIN RSA PRIVATE KEY---";
-const char *end_key = "---END RSA PRIVATE KEY---";
-const char *begin_license = "---BEGIN LICENSE---";
-const char *end_license = "---END LICENSE---";
-const char *begin_license_sha_a = "---BEGIN SHA1 A---";
-const char *end_license_sha_a = "---END SHA1 A---";
-const char *begin_license_sha_b = "---BEGIN SHA1 B---";
-const char *end_license_sha_b = "---END SHA1 B---";
+extern const char *begin_session;
+extern const char *end_session;
+extern const char *begin_key;
+extern const char *end_key;
+extern const char *begin_license;
+extern const char *end_license;
+extern const char *begin_license_sha_a;
+extern const char *end_license_sha_a;
+extern const char *begin_license_sha_b;
+extern const char *end_license_sha_b;
 
 PLICENSE_SHA_STRUCT license = NULL;
 RSA *rsa_provider = NULL;
@@ -36,6 +37,12 @@ unsigned char *license_sha_a = NULL;
 unsigned char *license_sha_b = NULL;
 
 char license_day[10];
+
+void newline_trim(char *p) {
+        int i = strlen(p);
+        while ('\n' == p[i - 1] || '\r' == p[i - 1])
+                p[--i] = 0;
+}
 
 void program_usage() {
         printf("usage:\nlicense_manager [test | day_count]\n");
@@ -222,7 +229,7 @@ void sha_license_buffer() {
 
 void client_license_write() {
 
-        FILE *fd = fopen("client.license", "w");
+        FILE *fd = fopen(client_license, "w");
 
         if (!fd)
                 exit_on_error(-ELICOFL);
@@ -243,72 +250,27 @@ void client_license_write() {
         fclose(fd);
 }
 
-void newline_trim(char *p) {
-        int i = strlen(p);
-        while ('\n' == p[i - 1] || '\r' == p[i - 1])
-                p[--i] = 0;
+void client_licence_load(char **license, char **sha_a, char **sha_b) {
+
+        unsigned char *client_lic_buffer = NULL;
+        load_from_file(client_license, &client_lic_buffer);
+        *sha_a = sub_value_extract_trim(client_lic_buffer, begin_license_sha_a,
+                                end_license_sha_a);
+        *sha_b = sub_value_extract_trim(client_lic_buffer, begin_license_sha_b,
+                                end_license_sha_b);
+        int len = strstr(client_lic_buffer, begin_license_sha_a)  
+                        - (char *)client_lic_buffer;
+        reallocate((unsigned char **)license, len + 1);
+        memcpy(*license, client_lic_buffer, len);
+        newline_trim(*license);
 }
 
 void client_license_test() {
 
-        FILE *fd = fopen("client.license", "r");
-        if (!fd)
-                exit_on_error(-ELICTST);
-
-        unsigned char license[4096];
-        unsigned char line[96];
-        unsigned char sha_a[1024];
-        unsigned char sha_b[1024];
-
-        memset(license, 0, 4096);
-        memset(sha_a, 0, 1024);
-        memset(sha_b, 0, 1024);
-
-        fgets((char *)license, 4096, fd);
-
-        newline_trim((char *)license);
-
-        short isSha_a = 0;
-        short isSha_b = 0;
-        short bsha_alen = strlen(begin_license_sha_a);
-        short bsha_blen = strlen(begin_license_sha_b);
-        short esha_alen = strlen(end_license_sha_a);
-        short esha_blen = strlen(end_license_sha_b);
-
-        while (!feof(fd) && fgets((char *)line, 96, fd)) {
-
-                if (!memcmp(line, begin_license_sha_a, bsha_alen)) {
-                        isSha_a = 1;
-                        isSha_b = 0;
-                        continue;
-                }
-                else if (!memcmp(line, begin_license_sha_b, bsha_blen)) {
-                        isSha_a = 0;
-                        isSha_b = 1;
-                        continue;
-                }
-                else if (!memcmp(line, end_license_sha_a, esha_alen)) {
-                        isSha_a = 0;
-                        isSha_b = 0;
-                        continue;
-                }
-                else if (!memcmp(line, end_license_sha_b, esha_blen)) {
-                        isSha_a = 0;
-                        isSha_b = 0;
-                        continue;
-                }
-
-                newline_trim((char *)line);
-
-                if (isSha_a)
-                        strcat((char *)sha_a, (const char *)line);
-                else if (isSha_b)
-                        strcat((char *)sha_b, (const char *)line);
-
-        }
-
-        fclose(fd);
-
+        char *license = NULL;
+        char *sha_a = NULL;
+        char *sha_b = NULL;
+        client_licence_load(&license, &sha_a, &sha_b);
         license_sha(license, sha_a, sha_b);
         printf("OK, licence is tested.\n");
 
@@ -331,6 +293,20 @@ int main(int argc, char **argv)
 
                 snprintf(license_day, 10, "%d", test_day);
         }
+        else if (argc > 2) {
+
+                if (memcmp("test", argv[1], 4))
+                        program_usage();
+                
+                if (argc == 3)
+                        license_for_app(argv[2]);
+                else if (argc == 5)
+                        license_for_service(argv[2], argv[3], argv[4]);
+                else
+                        program_usage();
+                printf("license is valid for application/service.\n");
+                program_exit(0);
+        }
 
         provider_private_key_load();
         printf("provider's key is loaded.\n");
@@ -352,6 +328,8 @@ int main(int argc, char **argv)
 
         client_license_write();
         printf("customer's license is saved into the file.\n");
+
+        remove(client_lic);
 
         client_license_test();
 
