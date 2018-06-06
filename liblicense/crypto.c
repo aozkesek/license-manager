@@ -1,30 +1,28 @@
 #include "ossllib.h"
 
-void crypto_init() {
-       
+void crypto_init() 
+{       
+
         if (!OPENSSL_init_crypto(OPENSSL_INIT_NO_LOAD_CONFIG, NULL))
                 exit_on_error(-1);
         
-        
 }
 
-
-void crypto_final() {
+void crypto_final() 
+{
         OPENSSL_cleanup();
 }
 
-void print_last_error() {
-        
-}
-
-void reallocate(unsigned char **p, int s) {
-        if (!p) return;
+static inline void reallocate(unsigned char **p, int s) 
+{
+        if (!p) return;         //consider to throw exception
         if (*p) free(*p);
         *p = malloc(s);
         memset(*p, 0, s);
 }
 
-void cleanup_on_error(EVP_CIPHER_CTX *ctx, int error_code) {
+void cleanup_on_error(EVP_CIPHER_CTX *ctx, int error_code) 
+{
         
         if (ctx) 
                 EVP_CIPHER_CTX_free(ctx);
@@ -33,8 +31,11 @@ void cleanup_on_error(EVP_CIPHER_CTX *ctx, int error_code) {
 }
 
 
-int crypto_check(EVP_CIPHER_CTX *ctx, const unsigned char *source, int slen, 
-                unsigned char **target, const unsigned char *session_key) {
+static inline int crypto_check(EVP_CIPHER_CTX *ctx, 
+                                const unsigned char *source, int slen, 
+                                unsigned char **target, 
+                                const unsigned char *session_key) 
+{
         
         if (!ctx)
                 return 0;
@@ -52,7 +53,8 @@ int crypto_check(EVP_CIPHER_CTX *ctx, const unsigned char *source, int slen,
 }
 
 int encrypt(const unsigned char *source, int slen, unsigned char **target, 
-                const unsigned char *session_key) {
+                const unsigned char *session_key) 
+{
 
         EVP_CIPHER_CTX *ctx= EVP_CIPHER_CTX_new();
         if (!crypto_check(ctx, source, slen, target, session_key))
@@ -81,7 +83,8 @@ int encrypt(const unsigned char *source, int slen, unsigned char **target,
 }
 
 int decrypt(const unsigned char *source, int slen, unsigned char **target, 
-                const unsigned char *session_key) {
+                const unsigned char *session_key) 
+{
 
         EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
 

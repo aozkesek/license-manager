@@ -11,7 +11,7 @@ const unsigned char b64[] =
         'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/' };
 
-int b64toi(const unsigned char c) {
+static inline int b64toi(const unsigned char c) {
 	
         if (c == '+')
 		return 62;
@@ -29,7 +29,8 @@ int b64toi(const unsigned char c) {
 
 }
 
-void generate_random_key(int klen, unsigned char **random_key) {
+static inline void generate_random_key(int klen, 
+                                        unsigned char **random_key) {
 
 	if (!random_key)
 	        exit_on_error(EB64FAIL);
@@ -49,7 +50,8 @@ void generate_random_key(int klen, unsigned char **random_key) {
 
 }
 
-int base64_decode(const unsigned char *source, unsigned char **target) {
+static inline int base64_decode(const unsigned char *source, 
+                                unsigned char **target) {
 
 	if (!source || !target)
 		exit_on_error(EB64FAIL);
@@ -88,8 +90,9 @@ int base64_decode(const unsigned char *source, unsigned char **target) {
 	return tlen;
 }
 
-unsigned char *base64_encode(const unsigned char *source, const int slen, 
-                                unsigned char **target) {
+static inline unsigned char *base64_encode(const unsigned char *source, 
+                                        const int slen, 
+                                        unsigned char **target) {
 
         if (!source || !slen || !target)
 		exit_on_error(EB64FAIL);
@@ -147,8 +150,9 @@ void base64_write_to_file(const unsigned char *b64, FILE *fd) {
 	
 }
 
-unsigned char *hex_encode(const unsigned char *source, const int slen, 
-                        unsigned char **target) {
+static inline unsigned char *hex_encode(const unsigned char *source, 
+                                        const int slen, 
+                                        unsigned char **target) {
 
 	int i = 0, 
 		c,
