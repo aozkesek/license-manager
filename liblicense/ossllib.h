@@ -49,18 +49,18 @@
 
 #define RSA_CRYPT(p, e, fl, f, t, r) \
         RSA_ ## p ## _ ## e (fl, f, t, r, RSA_PKCS1_PADDING)
-        
+
 extern void program_exit(int exit_code);
 
 void crypto_init();
 void crypto_final();
-void print_last_error();
-static inline void reallocate(unsigned char **p, int s);
+extern inline void reallocate(unsigned char **p, int s);
+
 void exit_on_error_m(const char *filename, const char *function_name, 
                         int line_number, int error_code);
 void cleanup_on_error(EVP_CIPHER_CTX *ctx, int error_code);
 
-static inline int crypto_check(EVP_CIPHER_CTX *ctx, 
+extern inline int crypto_check(EVP_CIPHER_CTX *ctx, 
                                 const unsigned char *source, int slen, 
                                 unsigned char **target, 
                                 const unsigned char *session_key);
@@ -88,14 +88,14 @@ RSA *rsa_publickey_load_from_file(const char *fname);
 RSA *rsa_privatekey_read_from_file(const char *fname);
 RSA *rsa_privatekey_load_from_file(const char *fname);
 
-static inline void generate_random_key(int klen, unsigned char **random_key);
+extern inline void generate_random_key(int klen, unsigned char **random_key);
 
-static inline int base64_decode(const unsigned char *source, 
+extern inline int base64_decode(const unsigned char *source, 
                                 unsigned char **target);
-static inline unsigned char *base64_encode(const unsigned char *source, 
+extern inline unsigned char *base64_encode(const unsigned char *source, 
                                         const int slen, 
                                         unsigned char **target);
-static inline unsigned char *hex_encode(const unsigned char *source, 
+extern inline unsigned char *hex_encode(const unsigned char *source, 
                                         const int slen, 
                                         unsigned char **target);
                                 

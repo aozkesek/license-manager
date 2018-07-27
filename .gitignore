@@ -6,6 +6,8 @@
 *.pem
 *.lic
 *.license
+*.*~
+*anjuta*
 
 license_provider/license_provider
 license_customer/license_customer

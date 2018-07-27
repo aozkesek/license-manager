@@ -13,11 +13,11 @@ void crypto_final()
         OPENSSL_cleanup();
 }
 
-static inline void reallocate(unsigned char **p, int s) 
+inline void reallocate(unsigned char **p, int s) 
 {
-        if (!p) return;         //consider to throw exception
-        if (*p) free(*p);
-        *p = malloc(s);
+	if (!p) return;
+	if (*p) free(*p);			
+        *p = malloc(s);		
         memset(*p, 0, s);
 }
 
@@ -30,8 +30,7 @@ void cleanup_on_error(EVP_CIPHER_CTX *ctx, int error_code)
         exit_on_error(error_code);
 }
 
-
-static inline int crypto_check(EVP_CIPHER_CTX *ctx, 
+inline int crypto_check(EVP_CIPHER_CTX *ctx, 
                                 const unsigned char *source, int slen, 
                                 unsigned char **target, 
                                 const unsigned char *session_key) 

@@ -29,7 +29,7 @@ static inline int b64toi(const unsigned char c) {
 
 }
 
-static inline void generate_random_key(int klen, 
+inline void generate_random_key(int klen, 
                                         unsigned char **random_key) {
 
 	if (!random_key)
@@ -50,7 +50,7 @@ static inline void generate_random_key(int klen,
 
 }
 
-static inline int base64_decode(const unsigned char *source, 
+inline int base64_decode(const unsigned char *source, 
                                 unsigned char **target) {
 
 	if (!source || !target)
@@ -90,7 +90,7 @@ static inline int base64_decode(const unsigned char *source,
 	return tlen;
 }
 
-static inline unsigned char *base64_encode(const unsigned char *source, 
+inline unsigned char *base64_encode(const unsigned char *source, 
                                         const int slen, 
                                         unsigned char **target) {
 
@@ -150,7 +150,7 @@ void base64_write_to_file(const unsigned char *b64, FILE *fd) {
 	
 }
 
-static inline unsigned char *hex_encode(const unsigned char *source, 
+inline unsigned char *hex_encode(const unsigned char *source, 
                                         const int slen, 
                                         unsigned char **target) {
 

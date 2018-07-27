@@ -23,9 +23,6 @@ void exit_on_error_m(const char *filename, const char *function_name,
         
         printf("vvv program is stopped on error: %d vvv\n(%s:%d::%s)\n",
                 error_code, filename, line_number, function_name);
-  
-        if (error_code < 0)
-                print_last_error();
         
         program_exit(error_code);
 }
