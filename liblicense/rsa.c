@@ -231,7 +231,7 @@ void rsa_selftest()
 	char *rsabuff = NULL;
 
 	int sz = gen_session_key(256, &txtbuff);
-	printf("rsa text generated %d %s\n", sz, txtbuff);
+	printf("rsa session-key generated %d %s\n", sz, txtbuff);
 
 	sz = pri_encrypt(sz, txtbuff, &tmpbuff, rsa);
 	printf("rsa private encrypted ended %d.\n", sz);
