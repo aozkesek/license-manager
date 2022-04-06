@@ -26,7 +26,7 @@ struct application {
 	struct service *svcs;
 }; 
 
-char *sha256(const char *src, const int srclen, char **target);
+char *digest(const char *src, const int srclen, char **target);
 int load_from_file(const char *fname, char **buffer);
 void build_sha(char *source, char *sha_a, char *sha_b);
 void license_app(const char *app_version);
@@ -35,5 +35,6 @@ void license_service(const char *app_version, const char *svc_name, const char *
 void base64_selftest();
 void crypto_selftest();
 void rsa_selftest();
+void license_selftest();
 
 #endif //_LICENSE_H

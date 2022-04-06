@@ -33,13 +33,7 @@ char *license_sha_b = NULL;
 
 char license_day[10];
 
-void usage() 
-{
-        printf("usage:\nlicense_manager [test | day_count]\n");
-        program_exit(1);
-}
-
-void program_exit(int exit_code) 
+void app_exit(int exit_code) 
 {
 
         if (rsa_provider) RSA_free(rsa_provider);
@@ -189,7 +183,7 @@ void hash_license() {
         char *base64_provider_enc_buffer = NULL;
         char half_buffer[512];
 
-        sha256(license_buffer_ex, strlen(license_buffer_ex), &sha_buffer);
+        digest(license_buffer_ex, strlen(license_buffer_ex), &sha_buffer);
 
         int elen = pri_encrypt(strlen(sha_buffer), sha_buffer, &base64_provider_enc_buffer, rsa_provider);
 
@@ -256,7 +250,7 @@ void test_license() {
         build_sha(license, sha_a, sha_b);
         printf("OK, licence is tested.\n");
 
-        program_exit(0);
+        app_exit(0);
 
 }
 
@@ -266,14 +260,21 @@ void test_library()
         base64_selftest();
         crypto_selftest();
         rsa_selftest();
+        license_selftest();
 
-        program_exit(0);
+        app_exit(0);
+}
+
+void usage() 
+{
+        printf("usage:\nlicense_manager [test | day_count]\n");
+        app_exit(1);
 }
 
 int main(int argc, char **argv)
 {
 
-        crypto_init(program_exit);
+        crypto_init(app_exit);
 
         if (argc == 2) {
                 if (!strcmp("testlicense", argv[1]))
@@ -299,7 +300,7 @@ int main(int argc, char **argv)
                 else
                         usage();
                 printf("license is valid for application/service.\n");
-                program_exit(0);
+                app_exit(0);
         }
 
         printf("loading provider...\n");
@@ -324,5 +325,5 @@ int main(int argc, char **argv)
 
         test_license();
 
-        program_exit(0);
+        app_exit(0);
 }

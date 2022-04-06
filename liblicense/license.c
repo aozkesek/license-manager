@@ -28,7 +28,7 @@ void exit_on_error(const char *fname, const char *fn_name, int line, int error)
                 onerror(error);
 }
 
-char *sha256(const char *src, const int srclen, char **target)
+char *digest(const char *src, const int srclen, char **target)
 {
 	
         unsigned int md_len = 0;
@@ -144,7 +144,7 @@ void build_sha(char *src, char *sha_a, char *sha_b)
         sha_initialize(&sha);
 
 	sha.src_sha = NULL;
-	sha256(src, strlen((const char *)src), &sha.src_sha);
+	digest(src, strlen(src), &sha.src_sha);
 	
 	decrypt_sha(&sha, sha_a, sha_b);
         
@@ -196,5 +196,35 @@ void license_service(const char *app_version, const char *svc_name, const char *
 
 void license_selftest()
 {
+        char *seskey = NULL;
+        char *hashed = NULL;
+
+        printf("testing digest with blake2s256...\n");
+        gen_session_key(196, &seskey);
+        digest(seskey, strlen(seskey), &hashed);
+        printf("input %d %s\nhashed:b64 %d %s\n", 
+                strlen(seskey), seskey, strlen(hashed), hashed);
+
+        char *tmpcuspri = "tmp-customer.pem";
+        char *tmppropri = "tmp-provider.pem";
+        char *tmpcuspub = "tmp-customer-pub.pem";
+        char *tmppropub = "tmp-provider-pub.pem";
+
+        RSA *cust = get_prikey_ex(tmpcuspri);
+        save_pubkey(tmpcuspub, cust);
+        RSA *prov = get_prikey_ex(tmppropri);
+        save_pubkey(tmppropub, prov);
+
+        if (cust) {
+                printf("customer's key test passed.\n");
+        }
+
+        if (prov) {
+                printf("provider's key test passed.\n");       
+        }
+
+cleanup:
+        free(seskey);
+        free(hashed);
 
 }

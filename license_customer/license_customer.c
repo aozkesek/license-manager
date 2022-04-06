@@ -55,7 +55,7 @@ void final() {
 	free(lic);
 }
 
-void program_exit(int exit_code) {
+void app_exit(int exit_code) {
 
         if (rsa_provider) RSA_free(rsa_provider);
         if (rsa_client) RSA_free(rsa_client);
@@ -181,7 +181,7 @@ void usage() {
                 "<application_version> <service_name:service_version " \
                 "[service_name_2:service_version2 ... ]>\n");
 
-        program_exit(-11);
+        app_exit(-11);
 
 }
 
@@ -191,7 +191,7 @@ int main(int argc, const char **argv)
 		usage();
 
         printf("(0/7) initialising...\n");
-	crypto_init(program_exit);
+	crypto_init(app_exit);
 
         printf("(1/7) loading client...\n");
 	load_client_prikey();
@@ -217,6 +217,6 @@ int main(int argc, const char **argv)
 	put_license();
 
 	printf("done.\n");
-	program_exit(0);
+	app_exit(0);
 }
 

@@ -16,4 +16,5 @@ clean :
 	$(foreach subdir, $(SUBDIRS), make -w -C $(subdir) clean;)
 
 test :
+	rm tmp-*.pem
 	license_provider/license_provider test
