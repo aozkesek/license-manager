@@ -265,6 +265,7 @@ void test_library()
         printf("testing the library functions...\n");
         base64_selftest();
         crypto_selftest();
+        rsa_selftest();
 
         program_exit(0);
 }

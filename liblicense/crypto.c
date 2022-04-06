@@ -4,9 +4,9 @@
 
 void crypto_init(void (*on_err)(int))
 {       
-        on_error = on_err;
+        onerror = on_err;
         if (!OPENSSL_init_crypto(OPENSSL_INIT_NO_LOAD_CONFIG, NULL))
-                on_error(-1);
+                onerror(-1);
         
 }
 

@@ -17,15 +17,15 @@ const char *begin_license_sha_a = "---BEGIN SHA1 A---";
 const char *end_license_sha_a = "---END SHA1 A---";
 const char *begin_license_sha_b = "---BEGIN SHA1 B---";
 const char *end_license_sha_b = "---END SHA1 B---";
-void (*on_error)(int) = NULL;
+void (*onerror)(int) = NULL;
 
 void exit_on_error(const char *fname, const char *fn_name, int line, int error) 
 {
         printf("vvv program is stopped on error: %d vvv\n(%s:%d::%s)\n",
                 error, fname, line, fn_name);
         
-        if (on_error)
-                on_error(error);
+        if (onerror)
+                onerror(error);
 }
 
 char *sha256(const char *src, const int srclen, char **target)

@@ -47,9 +47,6 @@
 #define on_error(e) \
 	exit_on_error(__FILE__, __FUNCTION__, __LINE__, e)
 
-#define RSA_CRYPT(p, e, fl, f, t, r) \
-	RSA_ ## p ## _ ## e (fl, f, t, r, RSA_PKCS1_PADDING)
-
 #define reallocate(pp, i) { \
 	if (pp) { \
 		if (*pp) free(*pp); \
@@ -74,7 +71,7 @@ extern const char *begin_license_sha_a;
 extern const char *end_license_sha_a;
 extern const char *begin_license_sha_b;
 extern const char *end_license_sha_b;
-extern void (*on_error)(int);
+extern void (*onerror)(int);
 
 void crypto_init(void (*on_err)(int));
 void crypto_final();

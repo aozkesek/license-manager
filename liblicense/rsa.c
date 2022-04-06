@@ -1,5 +1,8 @@
-#include "ossllib.h"
 #include <sys/stat.h>
+#include "ossllib.h"
+
+#define RSA_CRYPT(p, e, fl, f, t, r) \
+	RSA_ ## p ## _ ## e (fl, f, t, r, RSA_PKCS1_PADDING)
 
 int pub_encrypt(int srclen, char *src, char **target, RSA *rsa)
 {
@@ -217,5 +220,32 @@ RSA *get_prikey_ex(const char *fname)
 
 void rsa_selftest()
 {
+	RSA *rsa = gen_key();
+	if (!rsa) {
+		printf("rsa test failed!");
+		return;
+	}
+
+	char *txtbuff = NULL;
+	char *tmpbuff = NULL;
+	char *rsabuff = NULL;
+
+	gen_session_key(1024, &txtbuff);
+	int sz = strlen(txtbuff);
+	printf("rsa text generated %d %s\n", sz, txtbuff);
+
+	pri_encrypt(sz, txtbuff, &tmpbuff, rsa);
+/*	pub_decrypt(tmpbuff, &rsabuff, rsa);
+
+	if (strcmp(txtbuff, rsabuff))
+		printf("RSA test failed!\n");
+	else
+		printf("RSA test passed!\n");
+*/
+
+cleanup:
+	if (txtbuff) free(txtbuff);
+	if (tmpbuff) free(tmpbuff);
+	if (rsabuff) free(rsabuff);
 
 }
