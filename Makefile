@@ -1,14 +1,19 @@
-include make.inc
+include common.mk
 
 SUBDIRS := liblicense license_customer license_provider
 
+.PHONY: all $(SUBDIRS)
 
-.PHONY: all cleanall $(SUBDIRS)
+# target: prerequsites
+#    recipe
 
-all: $(SUBDIRS)
+all : $(SUBDIRS)
 
-$(SUBDIRS):
+$(SUBDIRS) :
 	$(MAKE) -w -C $@
-				
-cleanall: 
-	$(foreach subdir,$(SUBDIRS), make -w -C $(subdir) clean;)
+
+clean :
+	$(foreach subdir, $(SUBDIRS), make -w -C $(subdir) clean;)
+
+test :
+	license_provider/license_provider test

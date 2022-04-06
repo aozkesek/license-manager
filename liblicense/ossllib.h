@@ -44,61 +44,72 @@
 #define ERDFILE -0x2001
 #define EWRFILE -0x2002
 
-#define exit_on_error(e) \
-        exit_on_error_m(__FILE__, __FUNCTION__, __LINE__, e)
+#define on_error(e) \
+	exit_on_error(__FILE__, __FUNCTION__, __LINE__, e)
 
 #define RSA_CRYPT(p, e, fl, f, t, r) \
-        RSA_ ## p ## _ ## e (fl, f, t, r, RSA_PKCS1_PADDING)
+	RSA_ ## p ## _ ## e (fl, f, t, r, RSA_PKCS1_PADDING)
 
-extern void program_exit(int exit_code);
+#define reallocate(pp, i) { \
+	if (pp) { \
+		if (*pp) free(*pp); \
+		*pp = malloc(i); \
+		memset(*pp, 0, i); \
+	} }
 
-void crypto_init();
+extern const char *prov_pri_pem;
+extern const char *prov_pub_pem;
+extern const char *cli_pri_pem;
+extern const char *cli_pub_pem;
+extern const char *client_lic;
+extern const char *client_license;
+
+extern const char *begin_session;
+extern const char *end_session;
+extern const char *begin_key;
+extern const char *end_key;
+extern const char *begin_license;
+extern const char *end_license;
+extern const char *begin_license_sha_a;
+extern const char *end_license_sha_a;
+extern const char *begin_license_sha_b;
+extern const char *end_license_sha_b;
+extern void (*on_error)(int);
+
+void crypto_init(void (*on_err)(int));
 void crypto_final();
-extern inline void reallocate(unsigned char **p, int s);
 
-void exit_on_error_m(const char *filename, const char *function_name, 
-                        int line_number, int error_code);
-void cleanup_on_error(EVP_CIPHER_CTX *ctx, int error_code);
+void exit_on_error(const char *fname, const char *fnname, int line, int error);
+void cleanup_on_error(EVP_CIPHER_CTX *ctx, int error);
 
-extern inline int crypto_check(EVP_CIPHER_CTX *ctx, 
-                                const unsigned char *source, int slen, 
-                                unsigned char **target, 
-                                const unsigned char *session_key);
-int encrypt(const unsigned char *source, int slen, unsigned char **target, 
-                const unsigned char *session_key);
-int decrypt(const unsigned char *source, int slen, unsigned char **target, 
-                const unsigned char *session_key);
+int encrypt(const char *src, int srclen, char **target, const char *session_key);
+int decrypt(const char *src, int srclen, char **target, const char *session_key);
 
-int public_encrypt_base64_buffer(int slen, unsigned char *source, 
-                                unsigned char **target, RSA *rsa);
-int private_encrypt_base64_buffer(int slen, unsigned char *source, 
-                                unsigned char **target, RSA *rsa);
-int public_decrypt_base64_buffer(unsigned char *source, 
-                                unsigned char **target, RSA *rsa);
-int private_decrypt_base64_buffer(unsigned char *source, 
-                                unsigned char **target, RSA *rsa);
-                                
-void publickey_write_to_file(const char *fileName, RSA *rsa);
-void privatekey_write_to_file(const char *fileName, RSA* rsa);
-RSA *rsa_reset_key_files(const char *pri_pem, const char *pub_pem);
-RSA *publickey_read_from_file(const char *fileName);
-RSA *privatekey_read_from_file(const char *fileName);
-RSA *rsa_publickey_read_from_file(const char *fname);
-RSA *rsa_publickey_load_from_file(const char *fname);
-RSA *rsa_privatekey_read_from_file(const char *fname);
-RSA *rsa_privatekey_load_from_file(const char *fname);
+int pub_encrypt(int srclen, char *src, char **target, RSA *rsa);
+int pri_encrypt(int srclen, char *src, char **target, RSA *rsa);
+int pub_decrypt(char *src, char **target, RSA *rsa);
+int pri_decrypt(char *src, char **target, RSA *rsa);
 
-extern inline void generate_random_key(int klen, unsigned char **random_key);
+void save_pubkey(const char *fname, RSA* rsa);
+void save_prikey(const char *fname, RSA* rsa);
+RSA *reset_key(const char *pri_pem, const char *pub_pem);
+RSA *load_pubkey(const char *fname);
+RSA *load_prikey(const char *fname);
+RSA *get_pubkey(const char *fname);
+RSA *get_pubkey_ex(const char *fname);
+RSA *get_prikey(const char *fname);
+RSA *get_prikey_ex(const char *fname);
 
-extern inline int base64_decode(const unsigned char *source, 
-                                unsigned char **target);
-extern inline unsigned char *base64_encode(const unsigned char *source, 
-                                        const int slen, 
-                                        unsigned char **target);
-extern inline unsigned char *hex_encode(const unsigned char *source, 
-                                        const int slen, 
-                                        unsigned char **target);
-                                
-void base64_write_to_file(const unsigned char *b64, FILE *fd);
-                               
+void base64_write_to_file(const char *b64, FILE *fd);
+
+void program_exit(int exit_code);
+void gen_session_key(int klen, char **random_key);
+int base64_decode(const char *src, const int srclen, char **target);
+char *base64_encode(const char *src, const int srclen, char **target);
+char *hex_encode(const char *src, const int srclen, char **target);
+
+int crypto_check(EVP_CIPHER_CTX *ctx, const char *src, int srclen,
+		 char **target, const char *session_key);
+
+
 #endif //_OSSLLIB_H

@@ -1,9 +1,9 @@
-include ../make.inc
+include ../common.mk
 
 all: license_customer
 
-license_customer : license_customer.c
-	$(CC) -o license_customer license_customer.c $(INCDIRS) $(LIBDIRS) $(LIBS)  
+license_customer: license_customer.c
+	$(CC) $(DEBUG) $(CC_OPTS) $(INCDIRS) $(LIBDIRS) -o license_customer license_customer.c $(LIBS)  
 
-clean :
+clean:
 	rm -f license_customer *.pem *.lic

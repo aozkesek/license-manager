@@ -1,88 +1,61 @@
 #include "ossllib.h"
 
-const unsigned char hexc[16] = 
-	{ '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 
-        'D', 'E', 'F' };
+#define b64toi(c) ( \
+	c=='+' ? 62 : \
+	c=='/' ? 63 : \
+	c>='0' && c<='9' ? 52+c-'0' : \
+	c>='a' && c<='z' ? 26+c-'a' : c-'A' \
+)
 
-const unsigned char b64[] = 
-	{ 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 
-        'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 
-        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 
-        'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 
-        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/' };
+const char hexc[16] =
+	{'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 
-static inline int b64toi(const unsigned char c) {
-	
-        if (c == '+')
-		return 62;
-	
-	if (c == '/')
-		return 63;
-		
-	if (c >= '0' && c <= '9')
-		return 52 + c - '0';
-		
-	if (c >= 'a' && c <= 'z')
-		return 26 + c - 'a';
-		
-	return c - 'A';
+const char b64[] =
+	{'A','B','C','D','E','F','G','H','I','J','K','L','M',
+         'N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
+         'a','b','c','d','e','f','g','h','i','j','k','l','m',
+         'n','o','p','q','r','s','t','u','v','w','x','y','z',
+         '0','1','2','3','4','5','6','7','8','9','+','/' };
 
-}
+void gen_session_key(int klen, char **key) {
 
-inline void generate_random_key(int klen, 
-                                        unsigned char **random_key) {
-
-	if (!random_key)
-	        exit_on_error(EB64FAIL);
+	if (!key)
+	        on_error(EB64FAIL);
 
 	if (klen < 16)
 		klen = 16;
 
-	if (*random_key)
-		free(*random_key);
+	reallocate(key, klen+1);
 
-	*random_key = malloc(klen + 1);
-	memset(*random_key, 0, klen + 1);
-
-	int i;
-	for (i = 0; i < klen; i++)
-		(*random_key)[i] = b64[rand() % 64];
+	for (int i = 0; i < klen; i++)
+		(*key)[i] = b64[rand() % 64];
 
 }
 
-inline int base64_decode(const unsigned char *source, 
-                                unsigned char **target) {
+int base64_decode(const char *src, const int srclen, char **target) {
 
-	if (!source || !target)
-		exit_on_error(EB64FAIL);
+	if (!src || !target || 	srclen % 4)
+		on_error(EB64FAIL);
 		
-	int i = 0, 
-		j = 0, 
-		slen = strlen((const char *)source),
-		tlen = (slen * 3 / 4);
+	int i = 0, j = 0, tlen = (srclen * 3 / 4);
+	char b0, b1, b2, b3;
 	
-	if (slen % 4)
-		exit_on_error(EB64FAIL);
-	
-	if (!(*target))
-		*target = malloc(tlen);
-		
-	memset(*target, 0, tlen);
-	
-	if (source[slen - 2] == '=')
+	if (src[srclen - 2] == '=')
 		tlen--;
-	if (source[slen - 1] == '=')
+	if (src[srclen - 1] == '=')
 		tlen--;
+
+	reallocate(target, tlen+1);
 		
-	while (i <= slen - 4) {
-		unsigned char b0 = source[i],
-				b1 = source[i+1],
-				b2 = source[i+2] == '=' ? 0 : source[i+2],
-				b3 = source[i+3] == '=' ? 0 : source[i+3];
+	while (i <= srclen - 4) {
+		b0 = src[i];
+		b1 = src[i+1];
+		b2 = src[i+2] == '=' ? 0 : src[i+2];
+		b3 = src[i+3] == '=' ? 0 : src[i+3];
+		
 		(*target)[j] = (b64toi(b0) << 2) + (b64toi(b1) >> 4);
-		(*target)[j + 1] = ((b64toi(b1) & 0xf) << 4) + 
-                                (b64toi(b2) >> 2);
-		(*target)[j + 2] = ((b64toi(b2) & 0x3) << 6) + b64toi(b3);
+		(*target)[j + 1] = ((b64toi(b1) & 0xf) << 4) + (b2 ? (b64toi(b2) >> 2) : 0);
+		(*target)[j + 2] = b2 && b3 ? (((b64toi(b2) & 0x3) << 6) + b64toi(b3)) : 0;
 		i += 4;
 		j += 3;
 	}
@@ -90,51 +63,51 @@ inline int base64_decode(const unsigned char *source,
 	return tlen;
 }
 
-inline unsigned char *base64_encode(const unsigned char *source, 
-                                        const int slen, 
-                                        unsigned char **target) {
+char *base64_encode(const char *src, const int srclen, char **target) {
 
-        if (!source || !slen || !target)
-		exit_on_error(EB64FAIL);
+        if (!src || !srclen || !target)
+		on_error(EB64FAIL);
 		
-	int i = 0, 
-		j = 0, 
-		tlen = 1 + (slen + 3 - slen % 3) * 4 / 3;
+	int i = 0, j = 0, tlen = 1 + (srclen + 3 - srclen % 3) * 4 / 3;
 		
 	reallocate(target, tlen);
 
-	while (i <= slen - 3) {
-		(*target)[j] = b64[source[i] >> 2];
-		(*target)[j + 1] = b64[((source[i] & 0x3) << 4) + 
-                                (source[i + 1] >> 4)];
-		(*target)[j + 2] = b64[((source[i + 1] & 0xf) << 2) + 
-                                (source[i + 2] >> 6)];
-		(*target)[j + 3] = b64[source[i + 2] & 0x3f];
+	unsigned char c1, c2, c3;
+	while (i <= srclen - 3) {
+		c1 = (unsigned char)src[i];
+		c2 = (unsigned char)src[i+1];
+		c3 = (unsigned char)src[i+2];
+		(*target)[j] = b64[c1 >> 2];
+		(*target)[j + 1] = b64[((c1 & 0x3) << 4) + (c2 >> 4)];
+		(*target)[j + 2] = b64[((c2 & 0xf) << 2) + (c3 >> 6)];
+		(*target)[j + 3] = b64[c3 & 0x3f];
 		i += 3;
 		j += 4;
 	}
-	if (slen % 3 == 2) {
-		(*target)[j] = b64[source[i] >> 2];
-		(*target)[j + 1] = b64[((source[i] & 0x3) << 4) + 
-                                (source[i + 1] >> 4)];
-		(*target)[j + 2] = b64[(source[i + 1] & 0xf) << 2];
+	if (srclen % 3 == 2) {
+		c1 = (unsigned char)src[i];
+		c2 = (unsigned char)src[i+1];
+		(*target)[j] = b64[c1 >> 2];
+		(*target)[j + 1] = b64[((c1 & 0x3) << 4) + (c2 >> 4)];
+		(*target)[j + 2] = b64[(c2 & 0xf) << 2];
 		(*target)[j + 3] = '=';
 	}
-	else if (slen % 3 == 1) {
-		(*target)[j] = b64[source[i] >> 2];
-		(*target)[j + 1] = b64[(source[i] & 0x3) << 4];
+	else if (srclen % 3 == 1) {
+		c1 = (unsigned char)src[i];
+		(*target)[j] = b64[c1 >> 2];
+		(*target)[j + 1] = b64[(c1 & 0x3) << 4];
 		(*target)[j + 2] = '=';
 		(*target)[j + 3] = '=';
 	}
 	return *target;
 }
 
-void base64_write_to_file(const unsigned char *b64, FILE *fd) {
+void base64_write_to_file(const char *b64, FILE *fd) {
 	
 	if (!b64 || !fd)
-		exit_on_error(EB64WRFL);
+		on_error(EB64WRFL);
 		
-	int l = strlen((const char *)b64),
+	int l = strlen(b64),
 		r = l % 64,
 		k = (l - r) / 64,
 		i = 0;
@@ -150,29 +123,51 @@ void base64_write_to_file(const unsigned char *b64, FILE *fd) {
 	
 }
 
-inline unsigned char *hex_encode(const unsigned char *source, 
-                                        const int slen, 
-                                        unsigned char **target) {
-
-	int i = 0, 
-		c,
-		tlen = 1 + slen * 2;
+char *hex_encode(const char *src, const int srclen, char **target) {
 	
-	if (!source || !slen)
-	        exit_on_error(EB64FAIL);
+	if (!src || !srclen)
+	        on_error(EB64FAIL);
 
-	if (!(*target))
-		*target = malloc(tlen);
-		
-	memset(*target, 0, tlen);
+	int i = 0, c, tlen = 1 + srclen * 2;
+	reallocate(target, tlen);
 	
-	while (i < slen) {
-		c = (int) source[i];
+	while (i < srclen) {
+		c = (int) src[i];
 		(*target)[2 * i] = hexc[c >> 4];
-		(*target)[ 2 * i + 1] = hexc[c & 0xf];
+		(*target)[2 * i + 1] = hexc[c & 0xf];
 		i++;
 	}
 	
 	return *target;
 }
 
+void base64_selftest()
+{
+	char *sesskey = NULL;
+	char *b64buff = NULL;
+	char *tmpbuff = NULL;
+
+	gen_session_key(64,&sesskey);
+	printf("Session key tested  : (len=%d) %s\n", strlen(sesskey), sesskey);
+
+	base64_encode(sesskey, strlen(sesskey), &b64buff);
+	printf("Base64 encode tested: (len=%d) %s\n", strlen(b64buff), b64buff);
+
+	base64_decode(b64buff, strlen(b64buff), &tmpbuff);
+	printf("Base64 decode tested: (len=%d) %s\n", strlen(tmpbuff), tmpbuff);
+
+	if (strcmp(sesskey, tmpbuff)) {
+		printf("Base64 test failed!\n");
+		goto cleanup;
+	}
+
+	hex_encode(sesskey, strlen(sesskey), &tmpbuff);
+	printf("Hex encode tested   : (len=%d) %s\n", strlen(tmpbuff), tmpbuff);
+
+	printf("Base64 test passed.\n");
+
+cleanup:
+	free(sesskey);
+	free(b64buff);
+	free(tmpbuff);
+}
