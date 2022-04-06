@@ -194,3 +194,7 @@ void license_service(const char *app_version, const char *svc_name, const char *
 
 }
 
+void license_selftest()
+{
+
+}

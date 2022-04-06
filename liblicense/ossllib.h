@@ -44,6 +44,16 @@
 #define ERDFILE -0x2001
 #define EWRFILE -0x2002
 
+#define RSA_KSIZE 2048
+/*
+ * we do use rsa pri/pub encrypt/decrypt for session key, and
+ * we do want to do only one time/call, so better keep session key length is less
+ *
+ * max session key size is equal (rsa key size (2048) / 8) - 17
+ *
+ * */
+#define MAX_SESSION_KSIZE 256 - 17
+
 #define on_error(e) \
 	exit_on_error(__FILE__, __FUNCTION__, __LINE__, e)
 
@@ -100,7 +110,7 @@ RSA *get_prikey_ex(const char *fname);
 void base64_write_to_file(const char *b64, FILE *fd);
 
 void program_exit(int exit_code);
-void gen_session_key(int klen, char **random_key);
+int gen_session_key(int klen, char **random_key);
 int base64_decode(const char *src, const int srclen, char **target);
 char *base64_encode(const char *src, const int srclen, char **target);
 char *hex_encode(const char *src, const int srclen, char **target);

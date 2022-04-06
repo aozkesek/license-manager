@@ -72,7 +72,7 @@ int pub_decrypt(char *src, char **target, RSA *rsa)
 
 	int enc_size = RSA_size(rsa);
 
-	if (!src || enc_size >= strlen((const char *)src))
+	if (!src || enc_size >= strlen(src))
 	        on_error(ERSAFAIL);
 
 	if (!target)
@@ -107,7 +107,7 @@ int pri_decrypt(char *src, char **target, RSA *rsa)
 
 	int enc_size = RSA_size(rsa);
 
-	if (!src || enc_size >= strlen((const char *)src))
+	if (!src || enc_size >= strlen(src))
 	        on_error(ERSAFAIL);
 
 	if (!target)
@@ -146,7 +146,7 @@ RSA *gen_key()
 
         e = BN_new();
         BN_set_word(e, RSA_F4);
-        rc = RSA_generate_key_ex(rsa, 2048, e, NULL);
+        rc = RSA_generate_key_ex(rsa, RSA_KSIZE, e, NULL);
         BN_free(e);
 
         if (!rc) 
@@ -230,22 +230,33 @@ void rsa_selftest()
 	char *tmpbuff = NULL;
 	char *rsabuff = NULL;
 
-	gen_session_key(1024, &txtbuff);
-	int sz = strlen(txtbuff);
+	int sz = gen_session_key(256, &txtbuff);
 	printf("rsa text generated %d %s\n", sz, txtbuff);
 
-	pri_encrypt(sz, txtbuff, &tmpbuff, rsa);
-/*	pub_decrypt(tmpbuff, &rsabuff, rsa);
+	sz = pri_encrypt(sz, txtbuff, &tmpbuff, rsa);
+	printf("rsa private encrypted ended %d.\n", sz);
+	sz = pub_decrypt(tmpbuff, &rsabuff, rsa);
+	printf("rsa public decrypted ended %d.\n", sz);
 
 	if (strcmp(txtbuff, rsabuff))
-		printf("RSA test failed!\n");
+		printf("RSA test pri-pub failed!\n");
 	else
-		printf("RSA test passed!\n");
-*/
+		printf("RSA test pri-pub passed!\n");
+
+	sz = pub_encrypt(sz, txtbuff, &tmpbuff, rsa);
+	printf("rsa public encrypted ended %d.\n", sz);
+	sz = pri_decrypt(tmpbuff, &rsabuff, rsa);
+	printf("rsa private decrypted ended %d.\n", sz);
+
+	if (strcmp(txtbuff, rsabuff))
+		printf("RSA test pub-pri failed!\n");
+	else
+		printf("RSA test pub-pri passed!\n");
+
 
 cleanup:
-	if (txtbuff) free(txtbuff);
-	if (tmpbuff) free(tmpbuff);
-	if (rsabuff) free(rsabuff);
+	free(txtbuff);
+	free(tmpbuff);
+	free(rsabuff);
 
 }

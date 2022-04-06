@@ -17,7 +17,7 @@ const char b64[] =
          'n','o','p','q','r','s','t','u','v','w','x','y','z',
          '0','1','2','3','4','5','6','7','8','9','+','/' };
 
-void gen_session_key(int klen, char **key) {
+int gen_session_key(int klen, char **key) {
 
 	if (!key)
 	        on_error(EB64FAIL);
@@ -25,11 +25,15 @@ void gen_session_key(int klen, char **key) {
 	if (klen < 16)
 		klen = 16;
 
+	if (klen > MAX_SESSION_KSIZE)
+		klen = MAX_SESSION_KSIZE;
+
 	reallocate(key, klen+1);
 
 	for (int i = 0; i < klen; i++)
 		(*key)[i] = b64[rand() % 64];
 
+	return klen;
 }
 
 int base64_decode(const char *src, const int srclen, char **target) {
