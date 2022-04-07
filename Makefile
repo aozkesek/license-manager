@@ -16,5 +16,12 @@ clean :
 	$(foreach subdir, $(SUBDIRS), make -w -C $(subdir) clean;)
 
 test :
-	rm tmp-*.pem
-	license_provider/license_provider test
+	@clear
+	@echo "testing the customer and provider apps..."
+	@rm tmp-*.pem
+
+	@license_customer/license_customer genkey
+	@license_provider/license_provider genkey
+
+	@license_customer/license_customer test
+	@license_provider/license_provider test

@@ -256,12 +256,22 @@ void test_license() {
 
 void test_library()
 {
-        printf("testing the library functions...\n");
+        printf("testing the provider's stuff...\n");
         base64_selftest();
         crypto_selftest();
         rsa_selftest();
         license_selftest();
 
+        app_exit(0);
+}
+
+void generate_keys() 
+{
+        const char *tmppropri = "tmp-provider.pem";
+        const char *tmppropub = "tmp-provider-pub.pem";
+        rsa_provider = get_prikey_ex(tmppropri);
+        save_pubkey(tmppropub, rsa_provider);
+        printf("test keys are generated.\n");
         app_exit(0);
 }
 
@@ -281,14 +291,15 @@ int main(int argc, char **argv)
                 	test_license();
                 else if (!strcmp("test", argv[1]))
                         test_library();
+                else if (!strcmp("genkey", argv[1]))
+                        generate_keys();
 
                 int test_day = atoi(argv[1]);
                 if ( test_day <= 0 || test_day > 90 )
                         usage();
 
                 snprintf(license_day, 10, "%d", test_day);
-        }
-        else if (argc > 2) {
+        } else if (argc > 2) {
 
                 if (memcmp("test", argv[1], 4))
                         usage();
@@ -301,6 +312,10 @@ int main(int argc, char **argv)
                         usage();
                 printf("license is valid for application/service.\n");
                 app_exit(0);
+        } else {
+                printf("generating keys, unless they exist.\n");
+                load_provider();
+                usage();
         }
 
         printf("loading provider...\n");

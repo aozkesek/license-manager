@@ -21,7 +21,7 @@ RSA *rsa_provider = NULL;
 FILE *fd_lic = NULL;
 char *session_key = NULL;
 
-void init(int argc, const char **argv) {
+void init(int argc, const char *argv[]) {
         
         lic = malloc(sizeof(struct application));
 
@@ -185,13 +185,46 @@ void usage() {
 
 }
 
+void test_self() 
+{       
+        const char *args[] = { "tester", "testee", "1.0", "testserv:1.0" };
+        const char *tmpcuspri = "tmp-customer.pem";
+        const char *tmpcuspub = "tmp-customer-pub.pem";
+        const char *tmppropub = "tmp-provider-pub.pem";
+
+        printf("testing the customer's staff...\n");
+        init(4, args);
+
+
+
+}
+
+void generate_keys()
+{
+        const char *tmpcuspri = "tmp-customer.pem";
+        const char *tmpcuspub = "tmp-customer-pub.pem";
+        rsa_client = get_prikey_ex(tmpcuspri);
+        save_pubkey(tmpcuspub, rsa_client);
+        printf("test keys are generated.\n");
+}
+
 int main(int argc, const char **argv)
 {
-	if (argc < 4)
-		usage();
 
         printf("(0/7) initialising...\n");
 	crypto_init(app_exit);
+
+        if (argc == 2) {
+                if (!strcmp(argv[1], "test"))
+                        test_self();
+                else if (!strcmp(argv[1], "genkey"))
+                        generate_keys();
+                app_exit(0);
+        } else if (argc < 4) {
+                printf("generating keys, unless they exist.\n");
+                load_client_prikey();
+                usage();
+        }
 
         printf("(1/7) loading client...\n");
 	load_client_prikey();

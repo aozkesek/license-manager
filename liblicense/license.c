@@ -1,11 +1,11 @@
 #include "license.h"
 
 const char *prov_pri_pem = "provider.pem";
-const char *prov_pub_pem = "public_provider.pem";
+const char *prov_pub_pem = "provider-pub.pem";
 const char *cli_pri_pem = "customer.pem";
-const char *cli_pub_pem = "public_customer.pem";
-const char *client_lic = "client.lic";
-const char *client_license = "client.license";
+const char *cli_pub_pem = "customer-pub.pem";
+const char *client_lic = "customer.lic";
+const char *client_license = "customer.license";
 
 const char *begin_session = "---BEGIN SESSION KEY---";
 const char *end_session = "---END SESSION KEY---";
