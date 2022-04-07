@@ -6,13 +6,19 @@
 
 #define ELICFILE 0x0001
 
-#define load_client_prikey() { \
-	rsa_client = get_prikey_ex(cli_pri_pem); \
-	save_pubkey(cli_pub_pem, rsa_client); \
+#define load_customer_pem() { \
+	rsa_client = get_prikey_ex(customer_pem); \
+	save_pubkey(customer_pub_pem, rsa_client); \
 }
 
-#define load_provider_pubkey() { \
-	rsa_provider = get_pubkey(prov_pub_pem); \
+#define load_provider_pub_pem() { \
+	rsa_provider = get_pubkey(provider_pub_pem); \
+}
+
+#define open_license() { \
+        fd_lic = fopen(customer_lic, "w"); \
+        if (!fd_lic) \
+                on_error(-ELICFILE); \
 }
 
 struct application *lic = NULL;
@@ -130,27 +136,23 @@ void put_session() {
         gen_session_key(16, &session_key);
         pub_encrypt(strlen(session_key), session_key, &enc_session_key, rsa_provider);
 
-        fputs("---BEGIN SESSION KEY---\n", fd_lic);
+        fputs(begin_session_ex, fd_lic);
         base64_write_to_file(enc_session_key, fd_lic);
-        fputs("---END SESSION KEY---\n", fd_lic);
+        fputs(end_session_ex, fd_lic);
 
         free(enc_session_key);
 }
 
-void put_client() {
+void put_customer() {
         char *client_key = NULL;
-        char *client_enc_key = NULL;
 
-        int len = load_from_file(cli_pri_pem, &client_key);
-        len = encrypt(client_key, len, &client_enc_key, session_key);
-        base64_encode(client_enc_key, len, &client_key);
-        free(client_enc_key);
-
-        fputs("---BEGIN RSA PRIVATE KEY---\n", fd_lic);
-        base64_write_to_file(client_key, fd_lic);
-        fputs("---END RSA PRIVATE KEY---\n", fd_lic);
-        
-        free(client_key);
+        int len = load_from_file(customer_pub_pem, &client_key);
+	if (len) {
+		fputs(client_key, fd_lic);
+		free(client_key);
+	} else {
+		app_exit(ELICFILE);
+	}
 }
 
 void put_license() {
@@ -168,44 +170,21 @@ void put_license() {
 
         free(enc_license);
 
-        fputs("---BEGIN LICENSE---\n", fd_lic);
+        fputs(begin_license_ex, fd_lic);
         base64_write_to_file(b64_license, fd_lic);
-        fputs("---END LICENSE---\n", fd_lic);
+        fputs(end_license_ex, fd_lic);
 
         free(b64_license);
 }
 
 void usage() {
 
-        printf("usage:\nlicense_public.exe <client> <issuer> " \
+        printf("usage:\nlicense_customer.exe <customer> <issuer> " \
                 "<application_version> <service_name:service_version " \
                 "[service_name_2:service_version2 ... ]>\n");
 
-        app_exit(-11);
+        app_exit(0);
 
-}
-
-void test_self() 
-{       
-        const char *args[] = { "tester", "testee", "1.0", "testserv:1.0" };
-        const char *tmpcuspri = "tmp-customer.pem";
-        const char *tmpcuspub = "tmp-customer-pub.pem";
-        const char *tmppropub = "tmp-provider-pub.pem";
-
-        printf("testing the customer's staff...\n");
-        init(4, args);
-
-
-
-}
-
-void generate_keys()
-{
-        const char *tmpcuspri = "tmp-customer.pem";
-        const char *tmpcuspub = "tmp-customer-pub.pem";
-        rsa_client = get_prikey_ex(tmpcuspri);
-        save_pubkey(tmpcuspub, rsa_client);
-        printf("test keys are generated.\n");
 }
 
 int main(int argc, const char **argv)
@@ -214,34 +193,30 @@ int main(int argc, const char **argv)
         printf("(0/7) initialising...\n");
 	crypto_init(app_exit);
 
-        if (argc == 2) {
-                if (!strcmp(argv[1], "test"))
-                        test_self();
-                else if (!strcmp(argv[1], "genkey"))
-                        generate_keys();
-                app_exit(0);
-        } else if (argc < 4) {
-                printf("generating keys, unless they exist.\n");
-                load_client_prikey();
-                usage();
+        if (argc < 4) {
+		printf("generating customer's keys, unless they exist.\n");
+		load_customer_pem();
+		usage();
         }
 
+#ifdef DEBUG
+        printf("testing the customer's staff...\n");
+#endif
+	
         printf("(1/7) loading client...\n");
-	load_client_prikey();
+	load_customer_pem();
 
         printf("(2/7) loading provider...\n");
-	load_provider_pubkey();
+	load_provider_pub_pem();
 
         printf("(3/7) opening license...\n");
-	fd_lic = fopen(client_lic, "w");
-	if (!fd_lic)
-		on_error(-ELICFILE);
+	open_license();
 
         printf("(4/7) saving session...\n");
 	put_session();
 
         printf("(5/7) saving client...\n");
-	put_client();
+	put_customer();
 
         printf("(6/7) initialising license...\n");
 	init(argc, argv);

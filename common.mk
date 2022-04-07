@@ -1,4 +1,4 @@
-DEBUG := -g
+DEBUG := -g -DDEBUG
 INCDIRS := -I../liblicense/
 LIBDIRS := -L../liblicense/
 LIBS := -llicense -lcrypto

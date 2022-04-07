@@ -64,23 +64,34 @@
 		memset(*pp, 0, i); \
 	} }
 
-extern const char *prov_pri_pem;
-extern const char *prov_pub_pem;
-extern const char *cli_pri_pem;
-extern const char *cli_pub_pem;
-extern const char *client_lic;
-extern const char *client_license;
+extern const char *provider_pem;
+extern const char *provider_pub_pem;
+extern const char *customer_pem;
+extern const char *customer_pub_pem;
+extern const char *customer_lic;
+extern const char *customer_license;
 
 extern const char *begin_session;
+extern const char *begin_session_ex;
 extern const char *end_session;
-extern const char *begin_key;
-extern const char *end_key;
+extern const char *end_session_ex;
+extern const char *begin_customer_pub;
+extern const char *begin_customer_pub_ex;
+extern const char *end_customer_pub;
+extern const char *end_customer_pub_ex;
 extern const char *begin_license;
+extern const char *begin_license_ex;
 extern const char *end_license;
+extern const char *end_license_ex;
 extern const char *begin_license_sha_a;
-extern const char *end_license_sha_a;
+extern const char *begin_license_sha_a_ex;
 extern const char *begin_license_sha_b;
+extern const char *begin_license_sha_b_ex;
+extern const char *end_license_sha_a;
+extern const char *end_license_sha_a_ex;
 extern const char *end_license_sha_b;
+extern const char *end_license_sha_b_ex
+;
 extern void (*onerror)(int);
 
 void crypto_init(void (*on_err)(int));

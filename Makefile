@@ -18,10 +18,19 @@ clean :
 test :
 	@clear
 	@echo "testing the customer and provider apps..."
-	@rm tmp-*.pem
-
-	@license_customer/license_customer genkey
-	@license_provider/license_provider genkey
-
-	@license_customer/license_customer test
-	@license_provider/license_provider test
+	@rm tmp-* -f
+	@echo
+	@license_customer/license_customer
+	@echo
+	@license_provider/license_provider
+	@echo
+	@license_customer/license_customer testee tester 1.0 testsvc:1.0
+	@echo
+	@cat tmp-customer.lic
+	@echo
+	@license_provider/license_provider 3650
+	@echo
+	@license_provider/license_provider 36
+	@echo
+	@license_provider/license_provider demo
+	

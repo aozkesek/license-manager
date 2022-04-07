@@ -11,13 +11,13 @@
 		p[--i] = 0; \
 }
 
-#define load_provider() { \
-        rsa_provider = get_prikey_ex(prov_pri_pem); \
-        save_pubkey(prov_pub_pem, rsa_provider); \
+#define load_provider_pem() { \
+        rsa_provider = get_prikey_ex(provider_pem); \
+        save_pubkey(provider_pub_pem, rsa_provider); \
 }
  
-#define load_client() { \
-        load_from_file(client_lic, &message_buffer); \
+#define load_customer() { \
+        load_from_file(customer_lic, &message_buffer); \
 }
 
 struct application *lic = NULL;
@@ -32,6 +32,7 @@ char *license_sha_a = NULL;
 char *license_sha_b = NULL;
 
 char license_day[10];
+#define MAX_DEMO_DAYS 90
 
 void app_exit(int exit_code) 
 {
@@ -60,7 +61,7 @@ void app_exit(int exit_code)
  * @tbegin begin tag/keyword
  * @tend end tag/keyword
  */
-char *extract_subval_ex(const char *src, const char *tbegin, const char *tend)
+char *ext_subval_ex(const char *src, const char *tbegin, const char *tend)
 {
 
         char *p_tbegin = strstr(src, tbegin);
@@ -93,7 +94,7 @@ char *extract_subval_ex(const char *src, const char *tbegin, const char *tend)
  * @tbegin begin tag/keyword
  * @tend end tag/keyword
  */
-char *extract_subval(const char *src, const char *tbegin, const char *tend)
+char *ext_subval(const char *src, const char *tbegin, const char *tend)
 {
  
         char *p_tbegin = strstr(src, tbegin);
@@ -120,7 +121,7 @@ void parse_session() {
         char *base64_buffer = NULL;
         int len;
 
-        base64_buffer = extract_subval_ex(message_buffer, begin_session, end_session);
+        base64_buffer = ext_subval_ex(message_buffer, begin_session, end_session);
 
         len = pri_decrypt(base64_buffer, &session_key, rsa_provider);
 
@@ -128,25 +129,25 @@ void parse_session() {
 
 }
 
-void parse_keys() {
-        char *base64_buffer = NULL;
-        char *pem_temp_client = "temp_customer.pem";
-
-        base64_buffer = extract_subval_ex(message_buffer, begin_key, end_key);
-
-        char *client_enc_key = NULL;
-        int len = base64_decode(base64_buffer, strlen(base64_buffer), &client_enc_key);
-        char *client_key = NULL;
-        len = decrypt(client_enc_key, len, &client_key, session_key);
-
-        FILE *fd = fopen(pem_temp_client, "w");
-        if (!fd)
-                on_error(-EPEMOFL);
-        fputs(client_key, fd);
-        fclose(fd);
-        rsa_client = get_prikey_ex(pem_temp_client);
-        remove(pem_temp_client);
-        free(base64_buffer);
+void parse_customer() {
+        char *temp_customer_pub = NULL;
+	char *temp_pem = "temp-customer-pub.pem";
+	
+        temp_customer_pub = ext_subval(message_buffer, begin_customer_pub, end_customer_pub);
+	
+	FILE *fd = fopen(temp_pem, "w");
+	if (!fd)
+		on_error(-ELICOFL);
+	
+	fputs(begin_customer_pub, fd);
+	fputs(temp_customer_pub, fd);
+	fputs(end_customer_pub_ex, fd);
+	fclose(fd);
+        rsa_client = load_pubkey(temp_pem);
+#ifndef DEBUG	
+	remove(temp_pem);
+#endif
+        free(temp_customer_pub);
 	
 }
 
@@ -154,7 +155,7 @@ void parse_license() {
         char *b64_buffer = NULL;
         char *enc_buffer = NULL;
 
-        b64_buffer = extract_subval_ex(message_buffer, begin_license, end_license);
+        b64_buffer = ext_subval_ex(message_buffer, begin_license, end_license);
 
         int len = base64_decode(b64_buffer, strlen(b64_buffer), &enc_buffer);
         len = decrypt(enc_buffer, len, &license_buffer, session_key);
@@ -164,7 +165,7 @@ void parse_license() {
 
         char lbuffer[4096];
 
-        if (strlen(license_day) > 0)
+        if (atoi(license_day) <= MAX_DEMO_DAYS)
                 sprintf(lbuffer, "{\"Type\":\"DEMO\",\"ValidFor\":%s,%s",
                         license_day, &license_buffer[1]);
         else
@@ -175,6 +176,9 @@ void parse_license() {
 
         reallocate(&license_buffer_ex, len + 1);
         strcpy(license_buffer_ex, lbuffer);
+#ifdef DEBUG
+	printf("%s\n", lbuffer);
+#endif
 
 }
 
@@ -208,7 +212,7 @@ void hash_license() {
 
 void save_license() {
 
-        FILE *fd = fopen(client_license, "w");
+        FILE *fd = fopen(customer_license, "w");
 
         if (!fd)
                 on_error(-ELICOFL);
@@ -229,42 +233,6 @@ void save_license() {
         fclose(fd);
 }
 
-void load_license(char **license, char **sha_a, char **sha_b) {
-
-        char *client_lic_buffer = NULL;
-        load_from_file(client_license, &client_lic_buffer);
-        *sha_a = extract_subval_ex(client_lic_buffer, begin_license_sha_a, end_license_sha_a);
-        *sha_b = extract_subval_ex(client_lic_buffer, begin_license_sha_b, end_license_sha_b);
-        int len = strstr(client_lic_buffer, begin_license_sha_a) - (char *)client_lic_buffer;
-        reallocate(license, len + 1);
-        memcpy(*license, client_lic_buffer, len);
-        trim_newline(*license);
-}
-
-void test_license() {
-
-        char *license = NULL;
-        char *sha_a = NULL;
-        char *sha_b = NULL;
-        load_license(&license, &sha_a, &sha_b);
-        build_sha(license, sha_a, sha_b);
-        printf("OK, licence is tested.\n");
-
-        app_exit(0);
-
-}
-
-void test_library()
-{
-        printf("testing the provider's stuff...\n");
-        base64_selftest();
-        crypto_selftest();
-        rsa_selftest();
-        license_selftest();
-
-        app_exit(0);
-}
-
 void generate_keys() 
 {
         const char *tmppropri = "tmp-provider.pem";
@@ -277,8 +245,8 @@ void generate_keys()
 
 void usage() 
 {
-        printf("usage:\nlicense_manager [test | day_count]\n");
-        app_exit(1);
+        printf("usage:\nlicense_provider [demo | day_count]\n");
+        app_exit(0);
 }
 
 int main(int argc, char **argv)
@@ -287,45 +255,30 @@ int main(int argc, char **argv)
         crypto_init(app_exit);
 
         if (argc == 2) {
-                if (!strcmp("testlicense", argv[1]))
-                	test_license();
-                else if (!strcmp("test", argv[1]))
-                        test_library();
-                else if (!strcmp("genkey", argv[1]))
-                        generate_keys();
-
-                int test_day = atoi(argv[1]);
-                if ( test_day <= 0 || test_day > 90 )
-                        usage();
-
-                snprintf(license_day, 10, "%d", test_day);
-        } else if (argc > 2) {
-
-                if (memcmp("test", argv[1], 4))
-                        usage();
-                
-                if (argc == 3)
-                        license_app(argv[2]);
-                else if (argc == 5)
-                        license_service(argv[2], argv[3], argv[4]);
-                else
-                        usage();
-                printf("license is valid for application/service.\n");
-                app_exit(0);
+		int valid_for = MAX_DEMO_DAYS;
+                if (strcmp("demo", argv[1])) {
+			valid_for = atoi(argv[1]);
+			if (valid_for <= 0)
+				usage();
+		}
+                snprintf(license_day, 10, "%d", valid_for);
         } else {
-                printf("generating keys, unless they exist.\n");
-                load_provider();
-                usage();
-        }
-
+                printf("generating provider's keys, unless they exist.\n");
+		load_provider_pem();
+		usage();
+        } 
+	
         printf("loading provider...\n");
-        load_provider();
+        load_provider_pem();
 
-        printf("loading client...\n");
-        load_client();
+        printf("loading customer...\n");
+        load_customer();
 
         printf("parsing session...\n");
         parse_session();
+	
+	printf("parsing customer...\n");
+	parse_customer();
 
         printf("parsing license...\n");
         parse_license();
@@ -336,9 +289,9 @@ int main(int argc, char **argv)
         save_license();
         printf("customer's license is saved into the file.\n");
 
-        //remove(client_lic);
-
-        test_license();
+#ifndef DEBUG
+        remove(customer_lic);
+#endif
 
         app_exit(0);
 }

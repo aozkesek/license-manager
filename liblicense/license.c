@@ -1,22 +1,42 @@
 #include "license.h"
 
-const char *prov_pri_pem = "provider.pem";
-const char *prov_pub_pem = "provider-pub.pem";
-const char *cli_pri_pem = "customer.pem";
-const char *cli_pub_pem = "customer-pub.pem";
-const char *client_lic = "customer.lic";
-const char *client_license = "customer.license";
+#ifdef DEBUG
+const char *provider_pem = "tmp-provider.pem";
+const char *provider_pub_pem = "tmp-provider-pub.pem";
+const char *customer_pem = "tmp-customer.pem";
+const char *customer_pub_pem = "tmp-customer-pub.pem";
+const char *customer_lic = "tmp-customer.lic";
+const char *customer_license = "tmp-customer.license";
+#else
+const char *provider_pem = "provider.pem";
+const char *provider_pub_pem = "provider-pub.pem";
+const char *customer_pem = "customer.pem";
+const char *customer_pub_pem = "customer-pub.pem";
+const char *customer_lic = "customer.lic";
+const char *customer_license = "customer.license";
+#endif
 
-const char *begin_session = "---BEGIN SESSION KEY---";
-const char *end_session = "---END SESSION KEY---";
-const char *begin_key = "---BEGIN RSA PRIVATE KEY---";
-const char *end_key = "---END RSA PRIVATE KEY---";
-const char *begin_license = "---BEGIN LICENSE---";
-const char *end_license = "---END LICENSE---";
-const char *begin_license_sha_a = "---BEGIN SHA1 A---";
-const char *end_license_sha_a = "---END SHA1 A---";
-const char *begin_license_sha_b = "---BEGIN SHA1 B---";
-const char *end_license_sha_b = "---END SHA1 B---";
+const char *begin_session = "-----BEGIN SESSION KEY-----";
+const char *begin_session_ex = "-----BEGIN SESSION KEY-----\n";
+const char *end_session = "-----END SESSION KEY-----";
+const char *end_session_ex = "-----END SESSION KEY-----\n";
+const char *begin_customer_pub = "-----BEGIN RSA PUBLIC KEY-----";
+const char *begin_customer_pub_ex = "-----BEGIN RSA PUBLIC KEY-----\n";
+const char *end_customer_pub = "-----END RSA PUBLIC KEY-----";
+const char *end_customer_pub_ex = "-----END RSA PUBLIC KEY-----\n";
+const char *begin_license = "-----BEGIN LICENSE-----";
+const char *begin_license_ex = "-----BEGIN LICENSE-----\n";
+const char *end_license = "-----END LICENSE-----";
+const char *end_license_ex = "-----END LICENSE-----\n";
+const char *begin_license_sha_a = "-----BEGIN SHA1 A-----";
+const char *begin_license_sha_a_ex = "-----BEGIN SHA1 A-----\n";
+const char *end_license_sha_a = "-----END SHA1 A-----";
+const char *end_license_sha_a_ex = "-----END SHA1 A-----\n";
+const char *begin_license_sha_b = "-----BEGIN SHA1 B-----";
+const char *begin_license_sha_b_ex = "-----BEGIN SHA1 B-----\n";
+const char *end_license_sha_b = "-----END SHA1 B-----";
+const char *end_license_sha_b_ex = "-----END SHA1 B-----\n";
+
 void (*onerror)(int) = NULL;
 
 void exit_on_error(const char *fname, const char *fn_name, int line, int error) 
@@ -86,8 +106,8 @@ void sha_initialize(struct sha *sha) {
 
 	memset(sha, 0, sizeof(struct sha));
 
-	sha->pub_provider = get_pubkey(prov_pub_pem);
-	sha->pri_client = get_prikey(cli_pri_pem);
+	sha->pub_provider = get_pubkey(provider_pub_pem);
+	sha->pri_client = get_prikey(customer_pem);
 
 }
 
@@ -166,7 +186,7 @@ void license_app(const char *app_version)
         char *client_licence_buffer = NULL;
         char license[128];
 
-        load_from_file(client_license, &client_licence_buffer);
+        load_from_file(customer_license, &client_licence_buffer);
         sprintf(license, ",\"Version\":\"%s\",", app_version);
         if (!strstr(client_licence_buffer, license))
                 on_error(ELICFAIL);
@@ -182,7 +202,7 @@ void license_service(const char *app_version, const char *svc_name, const char *
         char *client_licence_buffer = NULL;
         char license[128];
 
-        load_from_file(client_license, &client_licence_buffer);
+        load_from_file(customer_license, &client_licence_buffer);
         sprintf(license, ",\"Version\":\"%s\",", app_version);
         if (!strstr(client_licence_buffer, license))
                 on_error(ELICFAIL);
