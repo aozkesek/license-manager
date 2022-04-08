@@ -10,11 +10,6 @@ void crypto_init(void (*on_err)(int))
         
 }
 
-void crypto_final() 
-{
-        OPENSSL_cleanup();
-}
-
 void cleanup_on_error(EVP_CIPHER_CTX *ctx, int error_code) 
 {
         if (ctx) 

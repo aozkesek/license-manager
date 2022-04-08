@@ -57,6 +57,8 @@
 #define on_error(e) \
 	exit_on_error(__FILE__, __FUNCTION__, __LINE__, e)
 
+#define crypto_final() OPENSSL_cleanup()
+
 #define reallocate(pp, i) { \
 	if (pp) { \
 		if (*pp) free(*pp); \
@@ -83,19 +85,18 @@ extern const char *begin_license;
 extern const char *begin_license_ex;
 extern const char *end_license;
 extern const char *end_license_ex;
-extern const char *begin_license_sha_a;
-extern const char *begin_license_sha_a_ex;
-extern const char *begin_license_sha_b;
-extern const char *begin_license_sha_b_ex;
-extern const char *end_license_sha_a;
-extern const char *end_license_sha_a_ex;
-extern const char *end_license_sha_b;
-extern const char *end_license_sha_b_ex
-;
+extern const char *begin_sha_a;
+extern const char *begin_sha_a_ex;
+extern const char *begin_sha_b;
+extern const char *begin_sha_b_ex;
+extern const char *end_sha_a;
+extern const char *end_sha_a_ex;
+extern const char *end_sha_b;
+extern const char *end_sha_b_ex;
+
 extern void (*onerror)(int);
 
 void crypto_init(void (*on_err)(int));
-void crypto_final();
 
 void exit_on_error(const char *fname, const char *fnname, int line, int error);
 void cleanup_on_error(EVP_CIPHER_CTX *ctx, int error);
@@ -120,7 +121,6 @@ RSA *get_prikey_ex(const char *fname);
 
 void base64_write_to_file(const char *b64, FILE *fd);
 
-void program_exit(int exit_code);
 int gen_session_key(int klen, char **random_key);
 int base64_decode(const char *src, const int srclen, char **target);
 char *base64_encode(const char *src, const int srclen, char **target);

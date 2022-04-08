@@ -28,14 +28,14 @@ const char *begin_license = "-----BEGIN LICENSE-----";
 const char *begin_license_ex = "-----BEGIN LICENSE-----\n";
 const char *end_license = "-----END LICENSE-----";
 const char *end_license_ex = "-----END LICENSE-----\n";
-const char *begin_license_sha_a = "-----BEGIN SHA1 A-----";
-const char *begin_license_sha_a_ex = "-----BEGIN SHA1 A-----\n";
-const char *end_license_sha_a = "-----END SHA1 A-----";
-const char *end_license_sha_a_ex = "-----END SHA1 A-----\n";
-const char *begin_license_sha_b = "-----BEGIN SHA1 B-----";
-const char *begin_license_sha_b_ex = "-----BEGIN SHA1 B-----\n";
-const char *end_license_sha_b = "-----END SHA1 B-----";
-const char *end_license_sha_b_ex = "-----END SHA1 B-----\n";
+const char *begin_sha_a = "-----BEGIN SHA1 A-----";
+const char *begin_sha_a_ex = "-----BEGIN SHA1 A-----\n";
+const char *end_sha_a = "-----END SHA1 A-----";
+const char *end_sha_a_ex = "-----END SHA1 A-----\n";
+const char *begin_sha_b = "-----BEGIN SHA1 B-----";
+const char *begin_sha_b_ex = "-----BEGIN SHA1 B-----\n";
+const char *end_sha_b = "-----END SHA1 B-----";
+const char *end_sha_b_ex = "-----END SHA1 B-----\n";
 
 void (*onerror)(int) = NULL;
 
@@ -48,7 +48,7 @@ void exit_on_error(const char *fname, const char *fn_name, int line, int error)
                 onerror(error);
 }
 
-char *digest(const char *src, const int srclen, char **target)
+char *digest(const char *src, const int srclen, char **outb)
 {
 	
         unsigned int md_len = 0;
@@ -56,11 +56,10 @@ char *digest(const char *src, const int srclen, char **target)
         const EVP_MD *md;
         char sha_buffer[EVP_MAX_MD_SIZE];
          
-        if (!src || !target || srclen < 1)
+        if (!src || !outb || srclen < 1)
 	        on_error(ESHAFAIL);
 
         md = EVP_get_digestbyname("blake2s256");
-
         if(!md) 
                 on_error(ESHAFAIL);
 
@@ -70,12 +69,15 @@ char *digest(const char *src, const int srclen, char **target)
         EVP_DigestFinal_ex(mdctx, sha_buffer, &md_len);
         EVP_MD_CTX_free(mdctx);
  
-	return base64_encode(sha_buffer, md_len, target);
+#ifdef DEBUG
+	printf("%d %s\ndigest %d\n", srclen, src, md_len);
+#endif
+	return base64_encode(sha_buffer, md_len, outb);
 }
 
-int load_from_file(const char *fname, char **buffer) {
+int load_from_file(const char *fname, char **outb) {
  
-        if (!buffer)
+        if (!outb)
                 on_error(-ERDFILE);
                 
         FILE *file = fopen(fname, "r");
@@ -90,91 +92,41 @@ int load_from_file(const char *fname, char **buffer) {
         int flen = ftell(file);
         rewind(file);
 
-        reallocate(buffer, flen + 1); 
-        fread(*buffer, flen, 1, file); 
+        reallocate(outb, flen + 1); 
+        fread(*outb, flen, 1, file); 
         fclose(file);
  
-        (*buffer)[flen] = 0;
+        (*outb)[flen] = 0;
  
         return flen;
 }
 
-void sha_initialize(struct sha *sha) {
-
-	if (!sha)
-		on_error(ELICINIT);
-
-	memset(sha, 0, sizeof(struct sha));
-
-	sha->pub_provider = get_pubkey(provider_pub_pem);
-	sha->pri_client = get_prikey(customer_pem);
-
-}
-
-void sha_finalize(struct sha *sha) {
-
-	if (!sha)
-	        on_error(ELICFINL);
-
-	if (sha->src_sha) 
-                free(sha->src_sha);
-	if (sha->sha) 
-                free(sha->sha);
-
-	if (sha->pub_provider) 
-                RSA_free(sha->pub_provider);
-	if (sha->pri_client) 
-                RSA_free(sha->pri_client);
-
-
-}
-
-void decrypt_sha(struct sha *sha, char *sha_a, char *sha_b)
+/**
+ * only the customer's part can call this,
+ * provider's public key needed.
+ */
+void verify_license()
 {
-
-	if (!sha)
-		on_error(ELICUPDT);
-
-	char *dec_shaa = NULL;
-	int alen = pri_decrypt(sha_a, &dec_shaa, sha->pri_client);
+	char *lic_buff = NULL;
+	char *sha_buff = NULL;
+	int len = 0;
 	
-	char *dec_shab = NULL;
-	int blen = pri_decrypt(sha_b, &dec_shab, sha->pri_client);
-
-	char *temp = malloc(alen + blen + 1);
-	memset(temp, 0, alen + blen + 1);
-	memcpy(temp, dec_shaa, alen);
-	memcpy(temp + alen, dec_shab, blen);
-
-	free(dec_shaa);
-	free(dec_shab);
-
-	pub_decrypt(temp, &sha->sha, sha->pub_provider);
-	free(temp);
-
-}
-
-void build_sha(char *src, char *sha_a, char *sha_b)
-{
-
-	if (!src || !sha_a || !sha_b)
-		on_error(ESHAFAIL);
-
-	struct sha sha;
-        sha_initialize(&sha);
-
-	sha.src_sha = NULL;
-	digest(src, strlen(src), &sha.src_sha);
+	load_from_file(customer_license, &lic_buff);
 	
-	decrypt_sha(&sha, sha_a, sha_b);
-        
- 	int result = strcmp(sha.src_sha, sha.sha);
-         
-	sha_finalize(&sha);
-
-	if (result != 0)
-                on_error(ESHAFAIL);
-
+	while (lic_buff[len] != '\n') len++;
+	digest(lic_buff, len, &sha_buff);
+	printf("license (%d): %s\n", len, sha_buff);
+	
+	int len_sha_a = strstr(lic_buff, end_sha_a) 
+			- strstr(lic_buff, begin_sha_a) - strlen(begin_sha_a);
+	int len_sha_b = strstr(lic_buff, end_sha_b) 
+			- strstr(lic_buff, begin_sha_b) - strlen(begin_sha_b);
+	
+	char *sha_a = malloc(len_sha_a+1);
+	char *sha_b = malloc(len_sha_b+1);
+	
+	
+	//pub_encrypt();
 }
 
 void license_app(const char *app_version) 

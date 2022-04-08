@@ -4,9 +4,6 @@ SUBDIRS := liblicense license_customer license_provider
 
 .PHONY: all $(SUBDIRS)
 
-# target: prerequsites
-#    recipe
-
 all : $(SUBDIRS)
 
 $(SUBDIRS) :
@@ -33,4 +30,6 @@ test :
 	@license_provider/license_provider 36
 	@echo
 	@license_provider/license_provider demo
+	@echo
+	@license_customer/license_customer verify
 	

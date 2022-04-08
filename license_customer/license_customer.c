@@ -21,7 +21,7 @@
                 on_error(-ELICFILE); \
 }
 
-struct application *lic = NULL;
+struct app_license *lic = NULL;
 RSA *rsa_client = NULL;
 RSA *rsa_provider = NULL;
 FILE *fd_lic = NULL;
@@ -29,7 +29,7 @@ char *session_key = NULL;
 
 void init(int argc, const char *argv[]) {
         
-        lic = malloc(sizeof(struct application));
+        lic = malloc(sizeof(struct app_license));
 
         strcpy(lic->acquirer, argv[1]);
         strcpy(lic->issuer, argv[2]);
@@ -193,11 +193,17 @@ int main(int argc, const char **argv)
         printf("(0/7) initialising...\n");
 	crypto_init(app_exit);
 
-        if (argc < 4) {
+        if (argc == 1) {
 		printf("generating customer's keys, unless they exist.\n");
 		load_customer_pem();
 		usage();
-        }
+        } else if (argc == 2 && !strcmp("verify", argv[1])) {
+		printf("verifying the license...\n");
+		verify_license();
+		app_exit(0);
+	} else if (argc < 4) {
+		usage();
+	}
 
 #ifdef DEBUG
         printf("testing the customer's staff...\n");

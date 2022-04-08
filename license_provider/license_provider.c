@@ -24,16 +24,20 @@ struct application *lic = NULL;
 RSA *rsa_provider = NULL;
 RSA *rsa_client = NULL;
 
+char *message_buffer = NULL;
 char *session_key = NULL;
 char *license_buffer = NULL;
 char *license_buffer_ex = NULL;
-char *message_buffer = NULL;
 char *license_sha_a = NULL;
 char *license_sha_b = NULL;
 
 char license_day[10];
 #define MAX_DEMO_DAYS 90
 
+/**
+ * cleanups then exists
+ * @exit_code exit code 
+ */
 void app_exit(int exit_code) 
 {
 
@@ -217,30 +221,20 @@ void save_license() {
         if (!fd)
                 on_error(-ELICOFL);
 
-        fputs((const char *)license_buffer_ex, fd);
+        fputs(license_buffer_ex, fd);
         fputs("\n", fd);
-        fputs(begin_license_sha_a, fd);
+        fputs(begin_sha_a, fd);
         fputs("\n", fd);
         base64_write_to_file(license_sha_a, fd);
-        fputs(end_license_sha_a, fd);
+        fputs(end_sha_a, fd);
         fputs("\n", fd);
-        fputs(begin_license_sha_b, fd);
+        fputs(begin_sha_b, fd);
         fputs("\n", fd);
         base64_write_to_file(license_sha_b, fd);
-        fputs(end_license_sha_b, fd);
+        fputs(end_sha_b, fd);
         fputs("\n", fd);
 
         fclose(fd);
-}
-
-void generate_keys() 
-{
-        const char *tmppropri = "tmp-provider.pem";
-        const char *tmppropub = "tmp-provider-pub.pem";
-        rsa_provider = get_prikey_ex(tmppropri);
-        save_pubkey(tmppropub, rsa_provider);
-        printf("test keys are generated.\n");
-        app_exit(0);
 }
 
 void usage() 
