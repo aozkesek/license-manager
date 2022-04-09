@@ -34,16 +34,12 @@ char *ext_subval_ex(const char *src, const char *tbegin, const char *tend);
  * @tend end tag/keyword
  */
 char *ext_subval(const char *src, const char *tbegin, const char *tend);
+
 char *digest(const char *src, const int srclen, char **outb);
 int load_from_file(const char *fname, char **outb);
 
 void verify_app(const char *app_version);
 void verify_service(const char *app_version, const char *svc_name, const char *svc_version);
 void verify_license();
-
-void base64_selftest();
-void crypto_selftest();
-void rsa_selftest();
-void license_selftest();
 
 #endif //_LICENSE_H

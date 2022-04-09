@@ -77,39 +77,3 @@ int decrypt(const char *src, int srclen, char **target, const char *session_key)
 
         return tlen;
 }
-
-/**
- * crypto_init() and crypto_final() must be called by the program.
- *
- */
-void crypto_selftest()
-{
-
-        char *sesskey = NULL;
-        char *tempkey = NULL;
-        char *b64buff = NULL;
-        char *tmpbuff = NULL;
-        char *txtbuff = NULL;
-
-        gen_session_key(64,&sesskey);
-        gen_session_key(1024, &txtbuff);
-        printf("Text to be encrypted  : length=%d %s\n", strlen(txtbuff), txtbuff);
-
-        int sz = encrypt(txtbuff, strlen(txtbuff), &tmpbuff, sesskey);
-        base64_encode(tmpbuff, sz, &b64buff);
-        printf("Crypto encrypt tested : encrypt-length=%d, base64-length=%d\n", sz, strlen(b64buff));
-        base64_decode(b64buff, strlen(b64buff), &tmpbuff);
-        sz = decrypt(tmpbuff, sz, &tempkey, sesskey);
-        printf("Crypto decrypt tested : decrypt-length=%d, text-length=%d\n", sz, strlen(tempkey));
-        if ((strcmp(tempkey,txtbuff)))
-                printf("Crypto test failed!\n");
-        else
-                printf("Crypto test passed!\n");
-
-cleanup:
-        free(sesskey);
-	free(b64buff);
-	free(txtbuff);
-	free(tmpbuff);
-        free(tempkey);
-}

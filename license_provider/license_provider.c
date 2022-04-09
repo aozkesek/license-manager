@@ -84,7 +84,7 @@ void parse_customer() {
 	fputs(end_customer_pub_ex, fd);
 	fclose(fd);
         rsa_client = load_pubkey(temp_pem);
-#ifndef DEBUG	
+#ifndef DEBUG
 	remove(temp_pem);
 #endif
         free(temp_customer_pub);

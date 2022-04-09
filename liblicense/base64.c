@@ -145,33 +145,3 @@ char *hex_encode(const char *src, const int srclen, char **target) {
 	return *target;
 }
 
-void base64_selftest()
-{
-	char *sesskey = NULL;
-	char *b64buff = NULL;
-	char *tmpbuff = NULL;
-
-	gen_session_key(64,&sesskey);
-	printf("Session key tested  : (len=%d) %s\n", strlen(sesskey), sesskey);
-
-	base64_encode(sesskey, strlen(sesskey), &b64buff);
-	printf("Base64 encode tested: (len=%d) %s\n", strlen(b64buff), b64buff);
-
-	base64_decode(b64buff, strlen(b64buff), &tmpbuff);
-	printf("Base64 decode tested: (len=%d) %s\n", strlen(tmpbuff), tmpbuff);
-
-	if (strcmp(sesskey, tmpbuff)) {
-		printf("Base64 test failed!\n");
-		goto cleanup;
-	}
-
-	hex_encode(sesskey, strlen(sesskey), &tmpbuff);
-	printf("Hex encode tested   : (len=%d) %s\n", strlen(tmpbuff), tmpbuff);
-
-	printf("Base64 test passed.\n");
-
-cleanup:
-	free(sesskey);
-	free(b64buff);
-	free(tmpbuff);
-}

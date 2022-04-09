@@ -118,9 +118,6 @@ char *digest(const char *src, const int srclen, char **outb)
         EVP_DigestFinal_ex(mdctx, sha_buffer, &md_len);
         EVP_MD_CTX_free(mdctx);
  
-#ifdef DEBUG
-	printf("%d %s\ndigest %d\n", srclen, src, md_len);
-#endif
 	return base64_encode(sha_buffer, md_len, outb);
 }
 
@@ -164,12 +161,9 @@ void verify_license()
 	
 	while (lic_buff[len] != '\n') len++;
 	digest(lic_buff, len, &sha_buff);
-	printf("license (%d): %s\n", len, sha_buff);
 	
 	char *enc_sha_a = ext_subval_ex(lic_buff, begin_sha_a_ex, end_sha_a_ex);
 	char *enc_sha_b = ext_subval_ex(lic_buff, begin_sha_b_ex, end_sha_b_ex);
-	
-	printf("sha-a: %s\nsha-b: %s\n", enc_sha_a, enc_sha_b);
 	
 	char *sha_a = NULL;
 	char *sha_b = NULL;
@@ -227,37 +221,3 @@ void license_service(const char *app_version, const char *svc_name, const char *
 
 }
 
-void license_selftest()
-{
-        char *seskey = NULL;
-        char *hashed = NULL;
-
-        printf("testing digest with blake2s256...\n");
-        gen_session_key(196, &seskey);
-        digest(seskey, strlen(seskey), &hashed);
-        printf("input %d %s\nhashed:b64 %d %s\n", 
-                strlen(seskey), seskey, strlen(hashed), hashed);
-
-        char *tmpcuspri = "tmp-customer.pem";
-        char *tmppropri = "tmp-provider.pem";
-        char *tmpcuspub = "tmp-customer-pub.pem";
-        char *tmppropub = "tmp-provider-pub.pem";
-
-        RSA *cust = get_prikey_ex(tmpcuspri);
-        save_pubkey(tmpcuspub, cust);
-        RSA *prov = get_prikey_ex(tmppropri);
-        save_pubkey(tmppropub, prov);
-
-        if (cust) {
-                printf("customer's key test passed.\n");
-        }
-
-        if (prov) {
-                printf("provider's key test passed.\n");       
-        }
-
-cleanup:
-        free(seskey);
-        free(hashed);
-
-}
