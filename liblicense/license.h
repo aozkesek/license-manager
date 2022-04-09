@@ -18,6 +18,22 @@ struct app_license {
 	struct service *svcs;
 }; 
 
+/**
+ * extracts the sub-value between begin-tag and end-tag and trim new line(s) in it;
+ *
+ * @src source text buffer
+ * @tbegin begin tag/keyword
+ * @tend end tag/keyword
+ */
+char *ext_subval_ex(const char *src, const char *tbegin, const char *tend);
+/**
+ * extracts the sub-value between begin-tag and end-tag;
+ *
+ * @src source text buffer
+ * @tbegin begin tag/keyword
+ * @tend end tag/keyword
+ */
+char *ext_subval(const char *src, const char *tbegin, const char *tend);
 char *digest(const char *src, const int srclen, char **outb);
 int load_from_file(const char *fname, char **outb);
 

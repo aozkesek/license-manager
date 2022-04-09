@@ -41,8 +41,11 @@
 #define ELICUPDT -0x1103
 #define ELICFINL -0x1104
 
+#define EEXTRAC -0x1105
+
 #define ERDFILE -0x2001
 #define EWRFILE -0x2002
+
 
 #define RSA_KSIZE 2048
 /*

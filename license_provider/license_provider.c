@@ -1,6 +1,5 @@
 #include "license.h"
 
-#define EEXTRAC 0x0001
 #define ELICOFL 0x0002
 #define EPEMOFL 0x0003
 #define ELICTST 0x0101
@@ -56,69 +55,6 @@ void app_exit(int exit_code)
         printf("program terminated with code (%d).\n", exit_code);
 
         exit(exit_code);
-}
-
-/**
- * extracts the sub-value between begin-tag and end-tag and trim new line(s) in it;
- *
- * @src source text buffer
- * @tbegin begin tag/keyword
- * @tend end tag/keyword
- */
-char *ext_subval_ex(const char *src, const char *tbegin, const char *tend)
-{
-
-        char *p_tbegin = strstr(src, tbegin);
-        if (!p_tbegin)
-                on_error(-EEXTRAC);
-
-        char *p_tend = strstr(src, tend);
-        if (!p_tend)
-                on_error(-EEXTRAC);
-
-        int i = 0, j = 0;
-        int pos = strlen(tbegin);
-        int len = p_tend - p_tbegin - pos;
-        char *key = malloc(len + 1);
-        memset(key, 0, len + 1);
-        while (i < len) {
-                if (p_tbegin[pos + i] != '\n')
-                        key[j++] = p_tbegin[pos + i];
-                i++;
-        }
-
-        return key;
-
-}
-
-/**
- * extracts the sub-value between begin-tag and end-tag;
- *
- * @src source text buffer
- * @tbegin begin tag/keyword
- * @tend end tag/keyword
- */
-char *ext_subval(const char *src, const char *tbegin, const char *tend)
-{
- 
-        char *p_tbegin = strstr(src, tbegin);
-        if (!p_tbegin)
-                on_error(-EEXTRAC);
-
-        char *p_tend = strstr(src, tend);
-        if (!p_tend)
-                on_error(-EEXTRAC);
-
-        int i = 0, j = 0;
-        int pos = strlen(tbegin);
-        int len = p_tend - p_tbegin - pos;
-        char *key = malloc(len + 1);
-        memset(key, 0, len + 1);
-        while (i < len)
-                key[j++] = p_tbegin[pos + i++];
-
-        return key;
-
 }
 
 void parse_session() {
