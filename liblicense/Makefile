@@ -12,3 +12,4 @@ liblicense.a : $(OBJS)
 
 clean :
 	rm -f liblicense.a *.o
+#comment

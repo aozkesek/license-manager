@@ -151,7 +151,7 @@ int load_from_file(const char *fname, char **outb) {
  * only the customer's part can call this,
  * provider's public key needed.
  */
-void verify_license()
+char *verify_license()
 {
 	char *lic_buff = NULL;
 	char *sha_buff = NULL;
@@ -178,10 +178,19 @@ void verify_license()
 	memcpy(enc_sha+len_a, sha_b, len_b);
 	rsa = get_pubkey(provider_pub_pem);
 	len = pub_decrypt(enc_sha, &sha, rsa);
-	
+
 	if (strcmp(sha_buff, sha))
 		on_error(ELICFAIL);
 
+	free(sha_buff);
+	free(enc_sha_a);
+	free(enc_sha_b);
+	free(sha_a);
+	free(sha_b);
+	free(enc_sha);
+	free(sha);
+	
+	return lic_buff;
 }
 
 void license_app(const char *app_version) 
@@ -190,14 +199,14 @@ void license_app(const char *app_version)
         if (!app_version)
                 on_error(ELICFAIL);
 
-        char *client_licence_buffer = NULL;
+        char *lic_buff = verify_license();
         char license[128];
 
-        load_from_file(customer_license, &client_licence_buffer);
         sprintf(license, ",\"Version\":\"%s\",", app_version);
-        if (!strstr(client_licence_buffer, license))
+        if (!strstr(lic_buff, license))
                 on_error(ELICFAIL);
-
+	
+	free(lic_buff);
 }
 
 void license_service(const char *app_version, const char *svc_name, const char *svc_version) 
@@ -206,18 +215,17 @@ void license_service(const char *app_version, const char *svc_name, const char *
         if (!app_version || !svc_name || !svc_version)
                 on_error(ELICFAIL);
 
-        char *client_licence_buffer = NULL;
+        char *lic_buff = verify_license();
         char license[128];
 
-        load_from_file(customer_license, &client_licence_buffer);
         sprintf(license, ",\"Version\":\"%s\",", app_version);
-        if (!strstr(client_licence_buffer, license))
+        if (!strstr(lic_buff, license))
                 on_error(ELICFAIL);
         sprintf(license, "{\"Name\":\"%s\",\"Version\":\"%s\"}", 
                 svc_name, svc_version);
-        if (!strstr(client_licence_buffer, license))
+        if (!strstr(lic_buff, license))
                 on_error(ELICFAIL);
         
-
+	free(lic_buff);
 }
 

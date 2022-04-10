@@ -40,6 +40,6 @@ int load_from_file(const char *fname, char **outb);
 
 void verify_app(const char *app_version);
 void verify_service(const char *app_version, const char *svc_name, const char *svc_version);
-void verify_license();
+char *verify_license();
 
 #endif //_LICENSE_H
