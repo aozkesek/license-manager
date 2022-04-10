@@ -19,9 +19,10 @@ An executable used to generate final license file from initial one.
 
 **Creating a License File**
 
-Running **license_provider** or **license_customer** executable generates RSA private/public
-keys and saves them under working directory as **provider.pem, provider-pub.pem and 
-customer.pem, customer-pub.pem**.  Keep provider-pub.pem together with license_customer
+Running **license_provider** or **license_customer** without a command-line 
+argument executable generates RSA private/public keys and saves them under 
+working directory as **provider.pem, provider-pub.pem and customer.pem, 
+customer-pub.pem**.  Keep provider-pub.pem together with license_customer
 executable.
 
 * **license_customer**<br>
@@ -46,7 +47,8 @@ parses encrypted license-json-string,<br>
 decrypts license-json-string with session key,<br>
 build a final license-json-string from given command-line arguments,<br>
 calculates a hash value from license-json-string,<br>
-encrypts the hash value with customer's public key,<br>
+encrypts the hash value with provider's private key,<br>
+encrypts the previous value with customer's public key,<br>
 saves final license-json-string and it's encrypted hash value into **customer.license**
 file,<br>
 send customer.license file to the customer's office, manually.
@@ -59,3 +61,5 @@ feature-or-service-name:version feature-or-service-name-2:version-2 ...
 * **license_provider** 3650
 * **license_provider** demo
 
+**PS**: export verify_license, verify_app and verify_service procedures, then 
+call one of this from the application or service you want to make it limited.
