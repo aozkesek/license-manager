@@ -1,0 +1,18 @@
+include ../common.nmk
+
+OBJS = base64.obj crypto.obj license.obj pem.obj rsa.obj 
+
+all : license.lib
+
+license.lib : $(OBJS) license.h ossllib.h
+# fix: delete unnecessary files
+	del /Q *.o
+	$(AR) $(AR_OPTS) $@ $(OBJS)
+
+.c.obj : 
+	$(CC) $(DEBUG) $(CC_OPTS) -c -o $@ $(INCDIRS) $< 
+
+clean :
+	del /Q license.lib *.obj
+	
+ 

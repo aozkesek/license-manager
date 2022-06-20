@@ -115,7 +115,7 @@ char *digest(const char *src, const int srclen, char **outb)
         mdctx = EVP_MD_CTX_new();
         EVP_DigestInit_ex(mdctx, md, NULL);
         EVP_DigestUpdate(mdctx, src, srclen);
-        EVP_DigestFinal_ex(mdctx, sha_buffer, &md_len);
+        EVP_DigestFinal_ex(mdctx, (uchar *)sha_buffer, &md_len);
         EVP_MD_CTX_free(mdctx);
  
 	return base64_encode(sha_buffer, md_len, outb);
@@ -126,7 +126,13 @@ int load_from_file(const char *fname, char **outb) {
         if (!outb)
                 on_error(-ERDFILE);
                 
-        FILE *file = fopen(fname, "r");
+        FILE* file = NULL;
+#ifdef _WIN64
+            fopen_s(&file, fname, "r");
+#else
+            file = fopen(fname, "r");
+#endif
+
         if (!file)
                 on_error(-ERDFILE);
  

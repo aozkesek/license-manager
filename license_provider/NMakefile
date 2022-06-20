@@ -1,0 +1,13 @@
+include ../common.nmk
+
+all : license_provider.exe
+
+license_provider.exe : license_provider.c
+	$(CC) $(DEBUG) $(CC_OPTS) $(INCDIRS) $(LIBDIRS) -o license_provider.exe \
+		license_provider.c $(LIBS)
+
+clean :
+	del /S license_provider.exe *.pem *.lic *.license
+	
+	
+ 

@@ -1,0 +1,11 @@
+DEBUG = -g -DDEBUG
+
+INCDIRS = -I"..\liblicense" -I"..\..\openssl\include"
+LIBDIRS = -L"..\liblicense" -L"..\..\openssl"
+LIBS = -llicense -lcrypto
+
+CC = clang
+CC_OPTS = -Werror --std=c11
+AR = ar
+AR_OPTS = rcus
+

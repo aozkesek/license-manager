@@ -7,10 +7,11 @@ SUBDIRS = liblicense license_customer license_provider
 all : $(SUBDIRS)
 
 $(SUBDIRS) :
-	$(MAKE) /f $@
+	$(MAKE) -w -C $@
 
 clean :
-	$(MAKE) /f $(SUBDIRS) clean
+
+	$(foreach subdir, $(SUBDIRS), make -w -C $(subdir) clean;)
 
 test :
 	clear

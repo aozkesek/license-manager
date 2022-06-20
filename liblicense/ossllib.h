@@ -6,6 +6,10 @@
 #include <string.h>
 #include <memory.h>
 
+/* 
+ * OSSL_ENCODER_to_bio(3) 
+ * OSSL_DECODER_from_bio(3)
+ */
 #include <openssl/evp.h>
 #include <openssl/err.h>
 #include <openssl/sha.h>
@@ -57,6 +61,8 @@
  * */
 #define MAX_SESSION_KSIZE 256 - 17
 
+#define uchar unsigned char
+
 #define on_error(e) \
 	exit_on_error(__FILE__, __FUNCTION__, __LINE__, e)
 
@@ -104,8 +110,8 @@ void crypto_init(void (*on_err)(int));
 void exit_on_error(const char *fname, const char *fnname, int line, int error);
 void cleanup_on_error(EVP_CIPHER_CTX *ctx, int error);
 
-int encrypt(const char *src, int srclen, char **target, const char *session_key);
-int decrypt(const char *src, int srclen, char **target, const char *session_key);
+int encrypt(const uchar *src, int srclen, uchar **target, const uchar *session_key);
+int decrypt(const uchar *src, int srclen, uchar **target, const uchar *session_key);
 
 int pub_encrypt(int srclen, char *src, char **target, RSA *rsa);
 int pri_encrypt(int srclen, char *src, char **target, RSA *rsa);
@@ -130,7 +136,7 @@ char *base64_encode(const char *src, const int srclen, char **target);
 char *hex_encode(const char *src, const int srclen, char **target);
 
 int crypto_check(EVP_CIPHER_CTX *ctx, const char *src, int srclen,
-		 char **target, const char *session_key);
+		 char **target, const uchar *session_key);
 
 
 #endif //_OSSLLIB_H

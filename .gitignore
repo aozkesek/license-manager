@@ -1,10 +1,13 @@
 .settings/
 .vscode/
+.vs/
 .*project
 *.o
 *.a
 *.pem
 *.lic
+*.obj
+*.pdb
 *.license
 *.*~
 *anjuta*

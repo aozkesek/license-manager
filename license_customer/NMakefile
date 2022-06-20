@@ -1,0 +1,11 @@
+include ../common.nmk
+
+all : license_customer.exe
+
+license_customer.exe : license_customer.c
+	$(CC) $(DEBUG) $(CC_OPTS) $(INCDIRS) $(LIBDIRS) -o license_customer.exe \
+		license_customer.c $(LIBS)  
+
+clean :
+	del /S license_customer.exe *.pem *.lic
+ 

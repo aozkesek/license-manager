@@ -18,7 +18,7 @@ void cleanup_on_error(EVP_CIPHER_CTX *ctx, int error_code)
         on_error(error_code);
 }
 
-int encrypt(const char *src, int srclen, char **target, const char *session_key)
+int encrypt(const uchar *src, int srclen, uchar **target, const uchar *session_key)
 {
 
         EVP_CIPHER_CTX *ctx= EVP_CIPHER_CTX_new();
@@ -46,7 +46,7 @@ int encrypt(const char *src, int srclen, char **target, const char *session_key)
         return tlen;
 }
 
-int decrypt(const char *src, int srclen, char **target, const char *session_key)
+int decrypt(const uchar *src, int srclen, uchar **target, const uchar *session_key)
 {
 
         EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
