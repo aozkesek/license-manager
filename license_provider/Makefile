@@ -1,11 +1,10 @@
 include ../common.mk
 
-all: license_provider
+all: license_provider.lib
 
-license_provider: license_provider.c
-	$(CC) $(DEBUG) $(CC_OPTS) $(INCDIRS) $(LIBDIRS) -o license_provider license_provider.c $(LIBS)
+license_provider.lib : license_provider.c
+	$(CC) $(DEBUG) $(CC_OPTS) $(INCDIRS) $(LIBDIRS) -o license_provider.lib license_provider.c $(LIBS)
 
 clean:
-	rm -f license_provider *.pem *.lic *.license
-	
-	
+	del /Q license_provider.lib *.pem *.lic *.license
+		

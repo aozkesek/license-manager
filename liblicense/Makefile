@@ -1,15 +1,14 @@
 include ../common.mk
 
-OBJS := base64.o crypto.o license.o pem.o rsa.o 
+OBJS = base64.obj crypto.obj license.obj pem.obj rsa.obj 
 
-all : liblicense.a
+all : liblicense.lib
 
-liblicense.a : $(OBJS)
+liblicense.lib : $(OBJS)
 	$(AR) $(AR_OPTS) $@ $(OBJS)
 
-%.o : %.c license.h ossllib.h
+.c.obj : 
 	$(CC) $(DEBUG) $(CC_OPTS) -c $< $(INCDIRS)
 
 clean :
-	rm -f liblicense.a *.o
-#comment
+	rm -f liblicense.lib *.o
