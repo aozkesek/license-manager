@@ -1,6 +1,6 @@
 include ../common.mk
 
-OBJS := base64.o crypto.o license.o pem.o rsa.o 
+OBJS = base64.o crypto.o license.o pem.o rsa.o 
 
 all : liblicense.a
 
